@@ -3,11 +3,14 @@ package me.kaigermany.ultimateutils;
 import java.util.ArrayList;
 
 import me.kaigermany.ultimateutils.classextensioninternals.FastHex;
+import me.kaigermany.ultimateutils.classextensioninternals.IMAGE;
 import me.kaigermany.ultimateutils.classextensioninternals.IO;
+import me.kaigermany.ultimateutils.classextensioninternals.MATH;
+import me.kaigermany.ultimateutils.classextensioninternals.SYSOUT;
 import me.kaigermany.ultimateutils.classextensioninternals.TIME;
 
 public interface ClassExtensions extends
-IO, me.kaigermany.ultimateutils.classextensioninternals.MATH, FastHex, TIME
+IO, MATH, FastHex, TIME, SYSOUT, IMAGE
 {
 	default String join(String[] in, String insert) {
 		if (in == null || in.length == 0)
