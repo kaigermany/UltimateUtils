@@ -108,7 +108,7 @@ public class SmartHTTP {
 		HTTPClient clientInstance = null;
 		int count = 0;
 		synchronized (clientInstances) {
-			count = clientInstanceCounts.get(searchKey).value;
+			count = clientInstanceCounts.getOrDefault(searchKey, new HTTPClientCount()).value;
 			ArrayList<HTTPClient> list = clientInstances.get(searchKey);
 			if(list != null){
 				for(HTTPClient client : list){
@@ -129,7 +129,7 @@ public class SmartHTTP {
 			boolean loop = true;
 			while(loop){
 				synchronized (clientInstances) {
-					count = clientInstanceCounts.get(searchKey).value;
+					count = clientInstanceCounts.getOrDefault(searchKey, new HTTPClientCount()).value;
 					ArrayList<HTTPClient> list = clientInstances.get(searchKey);
 					if(list != null){
 						for(HTTPClient client : list){

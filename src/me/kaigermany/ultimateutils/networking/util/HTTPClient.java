@@ -68,7 +68,6 @@ public class HTTPClient {
 		}
 		os.flush();
 		
-		
 		String len = null;
 		int responseCode;
 		HashMap<String, String> resultHeader = new HashMap<String, String>();
@@ -88,8 +87,9 @@ public class HTTPClient {
 				String v = line.substring(p+1).trim();
 				//System.out.println("k=" + k);
 				//System.out.println("v=" + v);
-				if(k.toLowerCase().equals("content-length")) len = v;
-				if(k.toLowerCase().equals("transfer-encoding") && v.equals("chunked")) isChunkedEncoding = true;
+				String kk = k.toLowerCase();
+				if(kk.equals("content-length")) len = v;
+				if(kk.equals("transfer-encoding") && v.equals("chunked")) isChunkedEncoding = true;
 				resultHeader.put(k, v);
 			}
 		}
@@ -135,9 +135,7 @@ public class HTTPClient {
 				returningResult = new HTTPResult(baos.toByteArray(), resultHeader, responseCode);
 			}
 			
-		}
-		
-		if(len == null){
+		} else if(len == null){
 			
 			if(event != null){
 				returningResult = new HTTPResult(null, resultHeader, responseCode);;
