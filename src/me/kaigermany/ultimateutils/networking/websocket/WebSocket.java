@@ -18,7 +18,7 @@ public class WebSocket extends WebSocketBasic {
 	 * @return Instance of the WebSocket
 	 * @throws IOException if something stupid happens
 	 */
-	public static WebSocket open(String url, IWebSocketEvent callback) throws IOException {
+	public static WebSocket open(String url, WebSocketEvent callback) throws IOException {
 		return open(url, callback, url.startsWith("wss://"), null);
 	}
 
@@ -30,7 +30,7 @@ public class WebSocket extends WebSocketBasic {
 	 * @return instance of the WebSocket
 	 * @throws IOException if something stupid happens
 	 */
-	public static WebSocket open(String url, IWebSocketEvent callback, Map<String, String> additionalHeaders) throws IOException {
+	public static WebSocket open(String url, WebSocketEvent callback, Map<String, String> additionalHeaders) throws IOException {
 		return open(url, callback, url.startsWith("wss://"), additionalHeaders);
 	}
 
@@ -43,7 +43,7 @@ public class WebSocket extends WebSocketBasic {
 	 * @return instance of the WebSocket
 	 * @throws IOException if something stupid happens
 	 */
-	public static WebSocket open(String url, IWebSocketEvent callback, boolean useSSL, Map<String, String> additionalHeaders) throws IOException {
+	public static WebSocket open(String url, WebSocketEvent callback, boolean useSSL, Map<String, String> additionalHeaders) throws IOException {
 		if(url.startsWith("wss://")) url = url.substring(6);
 		else if(url.startsWith("ws://")) url = url.substring(5);
 		int a = url.indexOf('/');
@@ -81,7 +81,7 @@ public class WebSocket extends WebSocketBasic {
 	 * @param additionalHeaders Headers that should be added
 	 * @throws IOException if something stupid happens
 	 */
-	public WebSocket(Socket socket, String ip, String targetPath, IWebSocketEvent callback, Map<String, String> additionalHeaders) throws IOException {
+	public WebSocket(Socket socket, String ip, String targetPath, WebSocketEvent callback, Map<String, String> additionalHeaders) throws IOException {
 		super(socket, callback);
 
 		this.socket = socket;

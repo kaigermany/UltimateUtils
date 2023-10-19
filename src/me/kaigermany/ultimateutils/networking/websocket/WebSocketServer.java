@@ -14,7 +14,7 @@ public class WebSocketServer extends WebSocketBasic {
 	 * @param event Event callbacks
 	 * @throws IOException if something stupid happens
 	 */
-	public WebSocketServer(InputStream is, OutputStream os, IWebSocketEvent event) throws IOException {
+	public WebSocketServer(InputStream is, OutputStream os, WebSocketEvent event) throws IOException {
 		super(is, os, event);
 		setServer(true);
 		initConnection();
@@ -27,7 +27,7 @@ public class WebSocketServer extends WebSocketBasic {
 	 * @param event Event callbacks
 	 * @throws IOException if something stupid happens
 	 */
-	public WebSocketServer(Socket socket, IWebSocketEvent event) throws IOException {
+	public WebSocketServer(Socket socket, WebSocketEvent event) throws IOException {
 		super(socket, event);
 		setServer(true);
 		initConnection();

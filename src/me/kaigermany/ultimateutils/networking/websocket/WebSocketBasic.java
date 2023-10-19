@@ -19,26 +19,26 @@ public class WebSocketBasic {
     protected volatile boolean alive = true;
     protected final DataInputStream dis;
     protected final DataOutputStream dos;
-    protected final IWebSocketEvent event;
+    protected final WebSocketEvent event;
     private boolean isServer = false;
 
-    public WebSocketBasic(Socket socket, IWebSocketEvent event) throws IOException {
+    public WebSocketBasic(Socket socket, WebSocketEvent event) throws IOException {
         this.event = event;
         dis = new DataInputStream(socket.getInputStream());
         dos = new DataOutputStream(socket.getOutputStream());
     }
 
-    public WebSocketBasic(InputStream is, OutputStream os, IWebSocketEvent event) {
+    public WebSocketBasic(InputStream is, OutputStream os, WebSocketEvent event) {
+        this.event = event;
         dis = is instanceof DataInputStream ? (DataInputStream)is :  new DataInputStream(is);
         dos = os instanceof DataOutputStream ? (DataOutputStream)os :  new DataOutputStream(os);
-        this.event = event;
     }
 
     /**
      * Used to set the maskMode
      * @param server enable or disable
      */
-    public void setServer(boolean server) {
+    protected void setServer(boolean server) {
         isServer = server;
     }
 
@@ -142,7 +142,7 @@ public class WebSocketBasic {
      * @param opCode opCode
      * @throws IOException
      */
-    public void writeFrame(byte[] data, int opCode) throws IOException {
+    protected void writeFrame(byte[] data, int opCode) throws IOException {
         // masking as Server is not allowed :(
         // https://datatracker.ietf.org/doc/html/rfc6455#section-5.1
         // -> "A server MUST NOT mask any frames that it sends to the client."
@@ -212,7 +212,7 @@ public class WebSocketBasic {
         return ctx.getSocketFactory();
     }
 
-    public static String calculateResponseSecret(byte[] challengeKey){
+    protected static String calculateResponseSecret(byte[] challengeKey){
         return calculateResponseSecret(new String(challengeKey));
     }
 
@@ -221,7 +221,7 @@ public class WebSocketBasic {
      * @param challengeKey
      * @return
      */
-    public static String calculateResponseSecret(String challengeKey){
+    protected static String calculateResponseSecret(String challengeKey){
         String key = challengeKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
         MessageDigest md = null;
         try {
