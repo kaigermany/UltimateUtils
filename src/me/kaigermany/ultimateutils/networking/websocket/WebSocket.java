@@ -13,10 +13,14 @@ public class WebSocket extends WebSocketBasic {
 
 	/**
 	 * Opens a new WebSocket to the given URL
-	 * @param url URL of the WebSocket Server
-	 * @param callback Event callbacks
+	 * 
+	 * @param url
+	 *            URL of the WebSocket Server
+	 * @param callback
+	 *            Event callbacks
 	 * @return Instance of the WebSocket
-	 * @throws IOException if something stupid happens
+	 * @throws IOException
+	 *             if something stupid happens
 	 */
 	public static WebSocket open(String url, WebSocketEvent callback) throws IOException {
 		return open(url, callback, url.startsWith("wss://"), null);
@@ -24,11 +28,16 @@ public class WebSocket extends WebSocketBasic {
 
 	/**
 	 * Opens a new WebSocket to the given URL
-	 * @param url URL of the WebSocket Server
-	 * @param callback Event callbacks
-	 * @param additionalHeaders Headers that should be added
+	 * 
+	 * @param url
+	 *            URL of the WebSocket Server
+	 * @param callback
+	 *            Event callbacks
+	 * @param additionalHeaders
+	 *            Headers that should be added
 	 * @return instance of the WebSocket
-	 * @throws IOException if something stupid happens
+	 * @throws IOException
+	 *             if something stupid happens
 	 */
 	public static WebSocket open(String url, WebSocketEvent callback, Map<String, String> additionalHeaders) throws IOException {
 		return open(url, callback, url.startsWith("wss://"), additionalHeaders);
@@ -36,20 +45,28 @@ public class WebSocket extends WebSocketBasic {
 
 	/**
 	 * Opens a new WebSocket to the given URL
-	 * @param url URL of the WebSocket Server
-	 * @param callback Event callbacks
-	 * @param useSSL should SSL be used for the WebSocket Connection
-	 * @param additionalHeaders Headers that should be added
+	 * 
+	 * @param url
+	 *            URL of the WebSocket Server
+	 * @param callback
+	 *            Event callbacks
+	 * @param useSSL
+	 *            should SSL be used for the WebSocket Connection
+	 * @param additionalHeaders
+	 *            Headers that should be added
 	 * @return instance of the WebSocket
-	 * @throws IOException if something stupid happens
+	 * @throws IOException
+	 *             if something stupid happens
 	 */
 	public static WebSocket open(String url, WebSocketEvent callback, boolean useSSL, Map<String, String> additionalHeaders) throws IOException {
-		if(url.startsWith("wss://")) url = url.substring(6);
-		else if(url.startsWith("ws://")) url = url.substring(5);
+		if (url.startsWith("wss://"))
+			url = url.substring(6);
+		else if (url.startsWith("ws://"))
+			url = url.substring(5);
 		int a = url.indexOf('/');
 		String serverName;
 		String targetPath;
-		if(a == -1){
+		if (a == -1) {
 			serverName = url;
 			targetPath = "/";
 		} else {
@@ -60,7 +77,7 @@ public class WebSocket extends WebSocketBasic {
 		String ip;
 		int port;
 		a = serverName.indexOf(':');
-		if(a == -1) {
+		if (a == -1) {
 			ip = serverName;
 			port = useSSL ? 443 : 80;
 		} else {
@@ -74,39 +91,50 @@ public class WebSocket extends WebSocketBasic {
 
 	/**
 	 * Opens a new WebSocket to the given Information
+	 * 
 	 * @param socket
 	 * @param ip
 	 * @param targetPath
-	 * @param callback Event callbacks
-	 * @param additionalHeaders Headers that should be added
-	 * @throws IOException if something stupid happens
+	 * @param callback
+	 *            Event callbacks
+	 * @param additionalHeaders
+	 *            Headers that should be added
+	 * @throws IOException
+	 *             if something stupid happens
 	 */
 	public WebSocket(Socket socket, String ip, String targetPath, WebSocketEvent callback, Map<String, String> additionalHeaders) throws IOException {
 		super(socket, callback);
 
 		this.socket = socket;
-		if(!handleHttpProtocolSwitch(ip, targetPath, additionalHeaders)) throw new IOException("Can't establish websocket connection");
+		if (!handleHttpProtocolSwitch(ip, targetPath, additionalHeaders))
+			throw new IOException("Can't establish websocket connection");
 		Thread t = new Thread(() -> {
-            try {
+			try {
 				event.onOpen(this);
-                receivePackets();
-            } catch(Exception ex) {
-                ex.printStackTrace();
-                if(alive) callback.onError(ex.getMessage());
-                alive = false;
-            }
-        });
+				receivePackets();
+			} catch (Exception ex) {
+				ex.printStackTrace();
+				if (alive)
+					callback.onError(ex.getMessage());
+				alive = false;
+			}
+		});
 		t.setDaemon(true);
 		t.start();
 	}
 
 	/**
 	 * Switches the Protocol to WebSocket
-	 * @param ip Address of the Server
-	 * @param targetPath HTTP Path
-	 * @param additionalHeaders additional Header information
+	 * 
+	 * @param ip
+	 *            Address of the Server
+	 * @param targetPath
+	 *            HTTP Path
+	 * @param additionalHeaders
+	 *            additional Header information
 	 * @return true if switch was successful
-	 * @throws IOException if something stupid happens
+	 * @throws IOException
+	 *             if something stupid happens
 	 */
 	protected boolean handleHttpProtocolSwitch(String ip, String targetPath, Map<String, String> additionalHeaders) throws IOException {
 		String challengeKey = generateRandomChallenge();
@@ -124,9 +152,9 @@ public class WebSocket extends WebSocketBasic {
 				.append("Upgrade: websocket\r\n")
 				.append("User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0\r\n\r\n");
 
-		if(additionalHeaders != null){
-			for(Map.Entry<String, String> e : additionalHeaders.entrySet()){
-				builder.append(e.getKey()).append(":").append(e.getValue()).append("\r\n");
+		if (additionalHeaders != null) {
+			for (Map.Entry<String, String> e : additionalHeaders.entrySet()) {
+				builder.append(e.getKey()).append(": ").append(e.getValue()).append("\r\n");
 			}
 		}
 
@@ -135,7 +163,7 @@ public class WebSocket extends WebSocketBasic {
 
 		String l = readLine();
 		String[] header = l.split(" ");
-		if(!header[1].equals("101")){
+		if (!header[1].equals("101")) {
 			System.err.println(l);
 			do {
 				l = readLine();
@@ -147,8 +175,9 @@ public class WebSocket extends WebSocketBasic {
 		String keyFilter = "Sec-WebSocket-Accept: ";
 		String keyResponse = null;
 
-		while((l = readLine()) != null){
-			if(l.length() < 4){
+		// TODO readLine() never return null, l.length() < 4 breaks the loop.
+		while ((l = readLine()) != null) {
+			if (l.length() < 4) {
 				break;
 			} else if (l.startsWith(keyFilter)) {
 				keyResponse = l.substring(keyFilter.length());
@@ -160,34 +189,42 @@ public class WebSocket extends WebSocketBasic {
 	}
 
 	/**
-	 * TODO COMMENT @KaiGermany
-	 * @return
+	 * Generates an random key. It is used to send to the Server, the Server
+	 * will do some well known definitions on it and send it back. if the Client
+	 * now detect an response that has not the expected modifications then the
+	 * connection is maybe a replay or an other illegal state.
+	 * 
+	 * @return Base64 encoded challenge key for the server.
 	 */
 	private String generateRandomChallenge() {
 		byte[] challenge = new byte[CHALLENGE_KEY_SIZE];
 		Random r = new Random(System.currentTimeMillis());
-		for(int i=0; i<CHALLENGE_KEY_SIZE; i++) challenge[i] = (byte)(r.nextInt() & 0xFF);
+		for (int i = 0; i < CHALLENGE_KEY_SIZE; i++){
+			challenge[i] = (byte) (r.nextInt() & 0xFF);
+		}
 		return new String(Base64.getEncoder().encode(challenge));
 	}
 
 	/**
-	 * TODO COMMENT @KaiGermany
+	 * Compares the received key and checks if the modification is equal to the
+	 * expected one.
+	 * 
 	 * @param challengeKey
 	 * @param challengeKeyResponse
 	 * @throws IOException
 	 */
 	private void runAntiReplayAttackCheck(String challengeKey, String challengeKeyResponse) throws IOException {
 		String expectedKey = calculateResponseSecret(challengeKey);
-		if(!expectedKey.equals(challengeKeyResponse)) throw new IOException("Sec-WebSocket-Accept does not give back an valid key, you are may run into an repeat attac!");
+		if (!expectedKey.equals(challengeKeyResponse)) throw new IOException("Sec-WebSocket-Accept does not give back an valid key, you are may run into an repeat attac!");
 	}
 
 	@Override
-	public void close(){
-		try{
+	public void close() {
+		try {
 			writeFrame(new byte[0], 0x8);
 			super.close();
 			socket.close();
-		}catch(IOException t){
+		} catch (IOException t) {
 			t.printStackTrace();
 			alive = false;
 			event.onError(t.getMessage());
