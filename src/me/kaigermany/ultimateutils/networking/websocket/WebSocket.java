@@ -103,24 +103,13 @@ public class WebSocket extends WebSocketBasic {
 	 *             if something stupid happens
 	 */
 	public WebSocket(Socket socket, String ip, String targetPath, WebSocketEvent callback, Map<String, String> additionalHeaders) throws IOException {
-		super(socket, callback);
+		super(socket, callback, false);
 
 		this.socket = socket;
 		if (!handleHttpProtocolSwitch(ip, targetPath, additionalHeaders))
 			throw new IOException("Can't establish websocket connection");
-		Thread t = new Thread(() -> {
-			try {
-				event.onOpen(this);
-				receivePackets();
-			} catch (Exception ex) {
-				ex.printStackTrace();
-				if (alive)
-					callback.onError(ex.getMessage());
-				alive = false;
-			}
-		});
-		t.setDaemon(true);
-		t.start();
+		
+		initThread();
 	}
 
 	/**

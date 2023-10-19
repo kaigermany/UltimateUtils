@@ -14,34 +14,40 @@ import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Random;
 
-public class WebSocketBasic {
-
+public abstract class WebSocketBasic {
 	protected volatile boolean alive = true;
 	protected final DataInputStream dis;
 	protected final DataOutputStream dos;
 	protected final WebSocketEvent event;
-	private boolean isServer = false;
+	private final boolean isServer;
 
-	public WebSocketBasic(Socket socket, WebSocketEvent event) throws IOException {
+	public WebSocketBasic(Socket socket, WebSocketEvent event, boolean isServer) throws IOException {
 		dis = new DataInputStream(socket.getInputStream());
 		dos = new DataOutputStream(socket.getOutputStream());
 		this.event = event;
+		this.isServer = isServer;
 	}
 
-	public WebSocketBasic(InputStream is, OutputStream os, WebSocketEvent event) {
+	public WebSocketBasic(InputStream is, OutputStream os, WebSocketEvent event, boolean isServer) throws IOException {
 		dis = is instanceof DataInputStream ? (DataInputStream) is : new DataInputStream(is);
 		dos = os instanceof DataOutputStream ? (DataOutputStream) os : new DataOutputStream(os);
 		this.event = event;
+		this.isServer = isServer;
 	}
-
-	/**
-	 * Used to set the maskMode
-	 * 
-	 * @param server
-	 *            enable or disable
-	 */
-	protected void setServer(boolean server) {
-		isServer = server;
+	
+	protected void initThread() throws IOException {
+		Thread t = new Thread(() -> {
+			try {
+				event.onOpen(this);
+				receivePackets();
+			} catch (Exception ex) {
+				ex.printStackTrace();
+				if (alive) event.onError(ex.getMessage());
+				alive = false;
+			}
+		});
+		t.setDaemon(true);
+		t.start();
 	}
 
 	/**

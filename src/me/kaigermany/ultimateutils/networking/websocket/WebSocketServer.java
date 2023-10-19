@@ -15,10 +15,9 @@ public class WebSocketServer extends WebSocketBasic {
 	 * @throws IOException if something stupid happens
 	 */
 	public WebSocketServer(InputStream is, OutputStream os, WebSocketEvent event) throws IOException {
-		super(is, os, event);
-		setServer(true);
-		initConnection();
-		new Thread(this::run).start();
+		super(is, os, event, true);
+		init();
+		initThread();
 	}
 
 	/**
@@ -28,17 +27,17 @@ public class WebSocketServer extends WebSocketBasic {
 	 * @throws IOException if something stupid happens
 	 */
 	public WebSocketServer(Socket socket, WebSocketEvent event) throws IOException {
-		super(socket, event);
-		setServer(true);
-		initConnection();
-		new Thread(this::run).start();
+		super(socket, event, true);
+		init();
+		initThread();
 	}
 
 	/**
 	 * Initiates the WebSocket Upgrade
 	 * @throws IOException if something stupid happens
 	 */
-	private void initConnection() throws IOException {
+	
+	protected void init() throws IOException {
 		String r;
 		String keyFilter = "Sec-WebSocket-Key: ";
 		String key = null;
@@ -56,16 +55,5 @@ public class WebSocketServer extends WebSocketBasic {
 				+ "Sec-WebSocket-Accept: " + key + "\r\n" +
 				"\r\n").getBytes());
 		dos.flush();
-	}
-
-	public void run() {
-		try {
-			event.onOpen(this);
-			receivePackets();
-		} catch (Exception e) {
-			e.printStackTrace();
-			alive = false;
-			event.onError("");
-		}
 	}
 }
