@@ -32,7 +32,7 @@ public interface FastHex {
 			out[i << 1] = HEX_CHARACTERS[(data[i] >>> 4) & 0xF];
 			out[(i << 1) | 1] = HEX_CHARACTERS[data[i] & 0xF];
 		}
-		return new String(data);
+		return new String(out);
 	}
 	
 	default byte[] unhex(char[] in) {
