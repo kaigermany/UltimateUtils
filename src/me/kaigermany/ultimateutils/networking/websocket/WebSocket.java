@@ -6,6 +6,8 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.Random;
 
+import me.kaigermany.ultimateutils.networking.util.SocketFactory;
+
 public class WebSocket extends WebSocketBasic {
 
 	private static final int CHALLENGE_KEY_SIZE = 16;
@@ -59,6 +61,10 @@ public class WebSocket extends WebSocketBasic {
 	 *             if something stupid happens
 	 */
 	public static WebSocket open(String url, WebSocketEvent callback, boolean useSSL, Map<String, String> additionalHeaders) throws IOException {
+		return open(url, callback, useSSL, false, additionalHeaders);
+	}
+	
+	public static WebSocket open(String url, WebSocketEvent callback, boolean useSSL, boolean disableCertificateCheck, Map<String, String> additionalHeaders) throws IOException {
 		if (url.startsWith("wss://"))
 			url = url.substring(6);
 		else if (url.startsWith("ws://"))
@@ -85,7 +91,8 @@ public class WebSocket extends WebSocketBasic {
 			port = Integer.parseInt(serverName.substring(a + 1));
 		}
 
-		Socket socket = useSSL ? getUncheckedSSLSocketFactory().createSocket(ip, port) : new Socket(ip, port);
+		Socket socket = SocketFactory.openConnection(ip, port, useSSL, disableCertificateCheck);
+				//useSSL ? getUncheckedSSLSocketFactory().createSocket(ip, port) : new Socket(ip, port);
 		return new WebSocket(socket, serverName, targetPath, callback, additionalHeaders);
 	}
 
