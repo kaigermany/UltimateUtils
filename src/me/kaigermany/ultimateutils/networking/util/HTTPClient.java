@@ -15,6 +15,7 @@ import java.util.Map.Entry;
 //TODO test
 public class HTTPClient {
 	private static final HashMap<String, String> defaultHeader;
+	private static final byte[] DUMMY_BUFFER = new byte[4096];
 	static{
 		defaultHeader = new HashMap<String, String>(11);
 		defaultHeader.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:75.0) Gecko/20100101 Firefox/75.0");
@@ -99,8 +100,8 @@ public class HTTPClient {
 		if(isChunkedEncoding){
 			
 			if(event != null){
-				returningResult = new HTTPResult(null, resultHeader, responseCode);;
-				event.onReceived(returningResult, new WrappedInputStream() {
+				returningResult = new HTTPResult(null, resultHeader, responseCode);
+				WrappedInputStream wis = new WrappedInputStream() {
 					//int chunkSize = 1;
 					int capacityLeft = Integer.parseInt(readLine(is).trim(), 16);;
 					@Override
@@ -122,7 +123,10 @@ public class HTTPClient {
 						}
 						return l;
 					}
-				});
+				};
+
+				event.onReceived(returningResult, wis);
+				wis.readToEnd(DUMMY_BUFFER);
 			} else {
 				ByteArrayOutputStream baos = new  ByteArrayOutputStream();
 				byte[] buf = new byte[4096];
@@ -138,7 +142,7 @@ public class HTTPClient {
 		} else if(len == null){
 			
 			if(event != null){
-				returningResult = new HTTPResult(null, resultHeader, responseCode);;
+				returningResult = new HTTPResult(null, resultHeader, responseCode);
 				event.onReceived(returningResult, is);
 			} else {
 				ByteArrayOutputStream baos = new  ByteArrayOutputStream();
@@ -161,14 +165,20 @@ public class HTTPClient {
 			
 			if(event != null){
 				returningResult = new HTTPResult(null, resultHeader, responseCode);
-				long lenVal = Long.parseLong(len);
-				event.onReceived(returningResult , new WrappedInputStream() {
+				final long lenVal = Long.parseLong(len);
+				WrappedInputStream wis = new WrappedInputStream() {
 					//int chunkSize = 1;
 					long capacityLeft = lenVal;
 					@Override
 					public int read(byte[] buf, int off, int len) throws IOException {
 						if(capacityLeft == -1) return -1;
-						if(len > capacityLeft) len = (int)capacityLeft;
+						if(capacityLeft < len) {
+							len = (int)capacityLeft;
+							if(len == 0){
+								capacityLeft = -1;
+								return -1;
+							}
+						}
 						int l = is.read(buf, off, len);
 						if(l == -1) {
 							capacityLeft = -1;
@@ -177,7 +187,9 @@ public class HTTPClient {
 						}
 						return l;
 					}
-				});
+				};
+				event.onReceived(returningResult, wis);
+				wis.readToEnd(DUMMY_BUFFER);
 			} else {
 				byte[] arr = new byte[Integer.parseInt(len)];
 				new DataInputStream(is).readFully(arr);
@@ -238,7 +250,12 @@ public class HTTPClient {
 			return read(buf, 0, buf.length);
 		}
 		
+		@Override
 		public abstract int read(byte[] buf, int off, int len) throws IOException;
+		
+		public void readToEnd(byte[] dummyBuffer) throws IOException {
+			while(read(dummyBuffer, 0, dummyBuffer.length) != -1);
+		}
 	}
 	
 	private void copyBytes(InputStream is, ByteArrayOutputStream baos, byte[] bufPtr, int len) throws IOException {
