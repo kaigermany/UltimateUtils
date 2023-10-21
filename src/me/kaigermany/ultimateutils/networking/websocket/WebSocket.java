@@ -64,6 +64,25 @@ public class WebSocket extends WebSocketBasic {
 		return open(url, callback, useSSL, false, additionalHeaders);
 	}
 	
+	/**
+	 * 
+	 * @param url
+	 *            URL of the WebSocket Server
+	 * @param callback
+	 *            Event callbacks
+	 * @param useSSL
+	 *            should SSL be used for the WebSocket Connection
+	 * @param disableCertificateCheck
+	 *            if useSSL && disableCertificateCheck then the standard
+	 *            certificate check will be disabled. USE AT OWN RISK since it
+	 *            allows also undetected men-in-the-middle attacks
+	 *            theoretically.
+	 * @param additionalHeaders
+	 *            Headers that should be added
+	 * @return instance of the WebSocket
+	 * @throws IOException
+	 *             if something stupid happens
+	 */
 	public static WebSocket open(String url, WebSocketEvent callback, boolean useSSL, boolean disableCertificateCheck, Map<String, String> additionalHeaders) throws IOException {
 		if (url.startsWith("wss://"))
 			url = url.substring(6);
@@ -213,7 +232,10 @@ public class WebSocket extends WebSocketBasic {
 		String expectedKey = calculateResponseSecret(challengeKey);
 		if (!expectedKey.equals(challengeKeyResponse)) throw new IOException("Sec-WebSocket-Accept does not give back an valid key, you are may run into an repeat attac!");
 	}
-
+	
+	/**
+	 * sends a close-message to the Server and exits the connection then.
+	 */
 	@Override
 	public void close() {
 		try {
