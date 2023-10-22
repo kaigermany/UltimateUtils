@@ -1,14 +1,10 @@
-package me.kaigermany.ultimateutils.networking;
+package me.kaigermany.ultimateutils.networking.smarthttp;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
-import me.kaigermany.ultimateutils.networking.util.HTTPClient;
-import me.kaigermany.ultimateutils.networking.util.HTTPResult;
-import me.kaigermany.ultimateutils.networking.util.HTTPResultEvent;
 //TODO test
 public class SmartHTTP {
 	private static int NUM_MAX_CONNECTIONS_PER_SERVER = 10;

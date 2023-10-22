@@ -1,4 +1,4 @@
-package me.kaigermany.ultimateutils.networking.util;
+package me.kaigermany.ultimateutils.networking.smarthttp;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -11,6 +11,8 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map.Entry;
+
+import me.kaigermany.ultimateutils.networking.util.SocketFactory;
 
 //TODO test
 public class HTTPClient {

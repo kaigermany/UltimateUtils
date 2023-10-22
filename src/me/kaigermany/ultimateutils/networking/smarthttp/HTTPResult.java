@@ -1,4 +1,4 @@
-package me.kaigermany.ultimateutils.networking.util;
+package me.kaigermany.ultimateutils.networking.smarthttp;
 
 import java.util.HashMap;
 
