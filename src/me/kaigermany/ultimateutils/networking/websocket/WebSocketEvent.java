@@ -10,6 +10,6 @@ public abstract class WebSocketEvent {
 
     public void onClose() {}
 
-    public void onError(String message) {}
+    public void onError(String message, Exception exception) {}
 
 }

@@ -199,7 +199,7 @@ public class WebSocket extends WebSocketBasic {
 			}
 		}
 
-		runAntiReplayAttackCheck(challengeKey, keyResponse);
+		runKeyCheck(challengeKey, keyResponse);
 		return true;
 	}
 
@@ -228,7 +228,7 @@ public class WebSocket extends WebSocketBasic {
 	 * @param challengeKeyResponse
 	 * @throws IOException
 	 */
-	private void runAntiReplayAttackCheck(String challengeKey, String challengeKeyResponse) throws IOException {
+	private void runKeyCheck(String challengeKey, String challengeKeyResponse) throws IOException {
 		String expectedKey = calculateResponseSecret(challengeKey);
 		if (!expectedKey.equals(challengeKeyResponse)) throw new IOException("Sec-WebSocket-Accept does not give back an valid key, you are may run into an repeat attac!");
 	}
@@ -242,10 +242,9 @@ public class WebSocket extends WebSocketBasic {
 			writeFrame(new byte[0], 0x8);
 			super.close();
 			socket.close();
-		} catch (IOException t) {
-			t.printStackTrace();
+		} catch (IOException e) {
 			alive = false;
-			event.onError(t.getMessage());
+			event.onError(e.getMessage(), e);
 		}
 	}
 }
