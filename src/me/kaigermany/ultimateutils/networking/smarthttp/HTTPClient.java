@@ -16,21 +16,27 @@ import me.kaigermany.ultimateutils.networking.util.SocketFactory;
 
 //TODO test
 public class HTTPClient {
-	private static final HashMap<String, String> defaultHeader;
+	private static final HashMap<String, String> DEFAULT_HEADER;
 	private static final byte[] DUMMY_BUFFER = new byte[4096];
+	private static final int MAX_SOCKET_AGE_MILLIS = 120 * 1000;
+	
 	static{
-		defaultHeader = new HashMap<String, String>(11);
-		defaultHeader.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:75.0) Gecko/20100101 Firefox/75.0");
-		defaultHeader.put("Connection", "keep-alive");
-		defaultHeader.put("DNT", "1");
+		DEFAULT_HEADER = new HashMap<String, String>(11);
+		DEFAULT_HEADER.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:75.0) Gecko/20100101 Firefox/75.0");
+		DEFAULT_HEADER.put("Connection", "keep-alive");
+		DEFAULT_HEADER.put("DNT", "1");
 	}
-	private long maxAge;
+	
+	private final Socket socket;
+	private final InputStream is;
+	private final OutputStream os;
+	private final String host;
+	
 	private volatile boolean isInUse = false;
 	private volatile boolean disabled = false;
-	private Socket socket;
-	private InputStream is;
-	private OutputStream os;
-	private String host;
+
+	private long maxAge;
+	
 	public HTTPClient(String server, int port, boolean ssl, boolean disableCertificateCheck) throws UnknownHostException, IOException {
 		socket = SocketFactory.openConnection(server, port, ssl, disableCertificateCheck);
 		host = server;
@@ -49,7 +55,7 @@ public class HTTPClient {
 		if(requestMethod == null) requestMethod = "GET";
 		if(headerFields == null) headerFields = new HashMap<String, String>();
 		
-		for(Entry<String, String> e : defaultHeader.entrySet()){
+		for(Entry<String, String> e : DEFAULT_HEADER.entrySet()){
 			if(headerFields.containsKey(e.getKey())) continue;
 			headerFields.put(e.getKey(), e.getValue());
 		}
@@ -218,7 +224,7 @@ public class HTTPClient {
 	}
 	
 	private void resetAge(){
-		maxAge = System.currentTimeMillis() + (120 * 1000);
+		maxAge = System.currentTimeMillis() + MAX_SOCKET_AGE_MILLIS;
 	}
 	public boolean isInUse(){
 		if(disabled) return false;
