@@ -1,20 +1,24 @@
 package me.kaigermany.ultimateutils.networking.websocket;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Random;
 
 public abstract class WebSocketBasic {
+	protected static final int OPCODE_CONTINUATION_FRAME = 0x00;
+	protected static final int OPCODE_TEXT_FRAME = 0x01;
+	protected static final int OPCODE_BINARY_FRAME = 0x02;
+	
+	protected static final int OPCODE_CONNECTION_CLOSE = 0x08;
+	protected static final int OPCODE_PING = 0x09;
+	protected static final int OPCODE_PONG = 0x0A;
+	
+	
 	protected volatile boolean alive = true;
 	protected final DataInputStream dis;
 	protected final DataOutputStream dos;
@@ -35,14 +39,20 @@ public abstract class WebSocketBasic {
 		this.isServer = isServer;
 	}
 	
+	/**
+	 * Starts the internal listener Thread. Must be started by child class. this
+	 * allows the WebSocket-Client to handle HTTP protocol switch before
+	 * launching the listener
+	 * 
+	 * @throws IOException
+	 */
 	protected void initThread() throws IOException {
 		Thread t = new Thread(() -> {
 			try {
 				event.onOpen(this);
 				receivePackets();
 			} catch (Exception ex) {
-				ex.printStackTrace();
-				if (alive) event.onError(ex.getMessage());
+				if(alive) event.onError(ex.getMessage(), ex);
 				alive = false;
 			}
 		});
@@ -58,9 +68,9 @@ public abstract class WebSocketBasic {
 	 */
 	public void send(String data) {
 		try {
-			writeFrame(data.getBytes(StandardCharsets.UTF_8), 0x01);
+			writeFrame(data.getBytes(StandardCharsets.UTF_8), OPCODE_TEXT_FRAME);
 		} catch (IOException ex) {
-			event.onError("Failed to write frame: " + ex.getMessage());
+			event.onError("Failed to write frame: " + ex.getMessage(), ex);
 		}
 	}
 
@@ -72,9 +82,9 @@ public abstract class WebSocketBasic {
 	 */
 	public void send(byte[] data) {
 		try {
-			writeFrame(data, 0x02);
+			writeFrame(data, OPCODE_BINARY_FRAME);
 		} catch (IOException ex) {
-			event.onError("Failed to write frame: " + ex.getMessage());
+			event.onError("Failed to write frame: " + ex.getMessage(), ex);
 		}
 	}
 
@@ -116,27 +126,29 @@ public abstract class WebSocketBasic {
 				} else {
 					if (multiPacketBuffer == null) {
 						
-						if (opCode == 1)
+						if (opCode == OPCODE_TEXT_FRAME)
 							event.onMessage(new String(data, StandardCharsets.UTF_8), this);
-						else if (opCode == 2)
+						else if (opCode == OPCODE_BINARY_FRAME)
 							event.onBinary(data, this);
 						
 						continue;
 					}
 					multiPacketBuffer.write(data);
 
-					if (opCode == 1)
+					if (opCode == OPCODE_TEXT_FRAME)
 						event.onMessage(new String(multiPacketBuffer.toByteArray(), StandardCharsets.UTF_8), this);
-					else if (opCode == 2)
+					else if (opCode == OPCODE_BINARY_FRAME)
 						event.onBinary(multiPacketBuffer.toByteArray(), this);
 
 					multiPacketBuffer = null;
 				}
-			} else if (opCode == 9) {
-				writeFrame(data, 0x0A);
-			} else if (opCode == 8) {
-				if (data.length > 0)
-					event.onError(new String(data));
+			} else if (opCode == OPCODE_PING) {
+				writeFrame(data, OPCODE_PONG);
+			} else if (opCode == OPCODE_CONNECTION_CLOSE) {
+				if (data.length > 0){
+					String errorText = new String(data, StandardCharsets.UTF_8);
+					event.onError("Connection close message: " + errorText, new SocketException(errorText));
+				}
 				event.onClose();
 				return;
 			}
@@ -222,41 +234,13 @@ public abstract class WebSocketBasic {
 	}
 
 	/**
-	 * Creates a new SSLSocketFactory that ignores all certificate validations
-	 * based on: <a href=
-	 * "https://stackoverflow.com/questions/12060250/ignore-ssl-certificate-errors-with-java">
-	 * ...</a>
-	 *
-	 * @return SSLSocketFactory
-	 * @throws IOException
-	 *             if something stupid happens
+	 * Generate response secret according to
+	 * <a href="https://datatracker.ietf.org/doc/html/rfc6455">the official
+	 * specifications</a>.<br/>
+	 * 
+	 * @param challengeKey the given challenge key
+	 * @return the new challenge key
 	 */
-	protected static SSLSocketFactory getUncheckedSSLSocketFactory() throws IOException {
-		TrustManager[] certs = new TrustManager[] { new X509TrustManager() {
-			@Override
-			public X509Certificate[] getAcceptedIssuers() {
-				return new X509Certificate[0];
-			}
-
-			@Override
-			public void checkServerTrusted(X509Certificate[] chain, String authType) {
-			}
-
-			@Override
-			public void checkClientTrusted(X509Certificate[] chain, String authType) {
-			}
-		} };
-
-		SSLContext ctx = null;
-		try {
-			ctx = SSLContext.getInstance("SSL");
-			ctx.init(null, certs, new SecureRandom());
-		} catch (java.security.GeneralSecurityException ex) {
-			throw new IOException(ex.getMessage());
-		}
-		return ctx.getSocketFactory();
-	}
-
 	protected static String calculateResponseSecret(byte[] challengeKey) {
 		return calculateResponseSecret(new String(challengeKey));
 	}
@@ -266,8 +250,8 @@ public abstract class WebSocketBasic {
 	 * <a href="https://datatracker.ietf.org/doc/html/rfc6455">the official
 	 * specifications</a>.<br/>
 	 * 
-	 * @param challengeKey
-	 * @return
+	 * @param challengeKey the given challenge key
+	 * @return the new challenge key
 	 */
 	protected static String calculateResponseSecret(String challengeKey) {
 		String key = challengeKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -325,7 +309,7 @@ public abstract class WebSocketBasic {
 
 	/**
 	 * Reads a full frame from DataInputStream and unmask it if needed.
-	 * 
+	 * Note that extreme long transmissions are not supported!
 	 * @param dis
 	 * @return
 	 * @throws IOException
@@ -337,7 +321,11 @@ public abstract class WebSocketBasic {
 		if (len == 126) {
 			len = dis.readUnsignedShort();
 		} else if (len == 127) {
-			len = (int) dis.readLong();
+			long len_long = dis.readLong();
+			len = (int)(len_long & 0x7FFFFFFFL);
+			if(len_long != (long)len) {
+				throw new IOException("packet is too long for this implementation! Maximum supported is 2GB of data caused by the limits of 'new byte[len]'.");
+			}
 		}
 		if (mask != 0) {
 			mask = dis.readInt();
