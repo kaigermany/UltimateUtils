@@ -132,8 +132,37 @@ public class WebSocket extends WebSocketBasic {
 		super(socket, callback, false);
 
 		this.socket = socket;
-		if (!handleHttpProtocolSwitch(ip, targetPath, additionalHeaders))
-			throw new IOException("Can't establish websocket connection");
+		
+		handleHttpProtocolSwitch(ip, targetPath, additionalHeaders);
+		
+		initThread();
+	}
+
+	/**
+	 * Opens a new WebSocket to the given Information. <br />
+	 * This ctor gives the additional option to skip the HTTP 101 Switching
+	 * Protocol, but I DO NOT RECOMMENT USING IT!
+	 * 
+	 * @param socket
+	 * @param ip
+	 * @param targetPath
+	 * @param callback
+	 *            Event callbacks
+	 * @param additionalHeaders
+	 *            Headers that should be added
+	 * @param noHandShake
+	 *            if true no handshake will be done and the program expects YOU
+	 *            handled that part right before calling this ctor.
+	 * 
+	 * @throws IOException
+	 *             if something stupid happens
+	 */
+	public WebSocket(Socket socket, String ip, String targetPath, WebSocketEvent callback, Map<String, String> additionalHeaders, boolean noHandShake) throws IOException {
+		super(socket, callback, false);
+
+		this.socket = socket;
+		
+		if(!noHandShake) handleHttpProtocolSwitch(ip, targetPath, additionalHeaders);
 		
 		initThread();
 	}
@@ -151,7 +180,7 @@ public class WebSocket extends WebSocketBasic {
 	 * @throws IOException
 	 *             if something stupid happens
 	 */
-	protected boolean handleHttpProtocolSwitch(String ip, String targetPath, Map<String, String> additionalHeaders) throws IOException {
+	protected void handleHttpProtocolSwitch(String ip, String targetPath, Map<String, String> additionalHeaders) throws IOException {
 		String challengeKey = generateRandomChallenge();
 		StringBuilder builder = new StringBuilder(2048).append("GET ").append(targetPath).append(" HTTP/1.1\r\n")
 				.append("Accept: */*\r\n")
@@ -179,28 +208,28 @@ public class WebSocket extends WebSocketBasic {
 		String l = readLine();
 		String[] header = l.split(" ");
 		if (!header[1].equals("101")) {
-			System.err.println(l);
-			do {
-				l = readLine();
-				System.err.println(l);
-			} while (l.length() >= 4);
-			return false;
+			StringBuilder sb = new StringBuilder(l);
+			try{
+				//ignore any other errors here,
+				//we just try to squeeze out more information if possible.
+				while ((l = readLine()).length() >= 4){
+					l = readLine();
+					sb.append('\n').append(l);
+				}
+			}catch(Throwable doNotInterruptMeIDontCareAnyway){}
+			throw new IOException("unexpected responce: " + sb.toString());
 		}
 
 		String keyFilter = "Sec-WebSocket-Accept: ";
 		String keyResponse = null;
 
-		// TODO readLine() never return null, l.length() < 4 breaks the loop.
-		while ((l = readLine()) != null) {
-			if (l.length() < 4) {
-				break;
-			} else if (l.startsWith(keyFilter)) {
+		while ((l = readLine()).length() >= 4){
+			if (l.startsWith(keyFilter)) {
 				keyResponse = l.substring(keyFilter.length());
 			}
 		}
 
 		runKeyCheck(challengeKey, keyResponse);
-		return true;
 	}
 
 	/**
