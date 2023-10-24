@@ -89,6 +89,13 @@ public class SmartHTTP {
 		}
 		return request(urlElements[1], port, urlElements[3], requestMethod, headerFields, postData, maxSocketCount, ssl, disableCertificateCheck, event);
 	}
+	
+	public static HTTPResult request(HTTPRequestOptions options) throws IOException {
+		return request(options.getServer(), options.getPort(), options.getPage(), options.getRequestMethod(),
+				options.getHeaderFields(), options.getPostData(), options.getMaxSocketCount(),
+				options.getUseSSL(), options.getDisableCertificateCheck(), options.getEvent());
+	}
+	
 	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck, HTTPResultEvent event) throws IOException {
 		boolean isConnectionCloseRequested = checkForConectionClose(headerFields);
 		if(isConnectionCloseRequested){
@@ -125,7 +132,9 @@ public class SmartHTTP {
 			boolean loop = true;
 			while(loop){
 				synchronized (clientInstances) {
-					count = clientInstanceCounts.getOrDefault(searchKey, new HTTPClientCount()).value;
+					HTTPClientCount counterInstance = clientInstanceCounts.get(searchKey);
+					if(counterInstance == null) clientInstanceCounts.put(searchKey, counterInstance = new HTTPClientCount());
+					count = counterInstance.value;
 					ArrayList<HTTPClient> list = clientInstances.get(searchKey);
 					if(list != null){
 						for(HTTPClient client : list){

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -85,7 +86,8 @@ public class HTTPClient {
 			String line = readLine(is);
 			String[] tmp = line.split(" ");
 			if(tmp.length < 2){
-				return new HTTPResult(null, null, 0);
+				//return new HTTPResult(null, null, 0);
+				throw new SocketException("Invalid socket state: no HTTP header was received!");
 			}
 			responseCode = Integer.parseInt(tmp[1]);
 			//if(!line.endsWith("200 OK")) return null;

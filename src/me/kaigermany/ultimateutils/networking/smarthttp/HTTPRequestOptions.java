@@ -10,7 +10,7 @@ public class HTTPRequestOptions {
 	private String requestMethod = "GET";
 	private HashMap<String, String> headerFields;
 	private byte[] postData;
-	private int maxSocketCount;
+	private int maxSocketCount = 10;
 	private boolean useSSL;
 	private boolean disableCertificateCheck;
 	private HTTPResultEvent event;
@@ -24,7 +24,7 @@ public class HTTPRequestOptions {
 		} else {
 			port = Integer.parseInt(urlElements[2]);
 		}
-		this.server = urlElements[0];
+		this.server = urlElements[1];
 		this.port = port;
 		this.page = urlElements[3];
 	}
