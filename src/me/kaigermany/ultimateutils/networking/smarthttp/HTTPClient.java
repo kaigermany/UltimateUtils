@@ -39,16 +39,18 @@ public class HTTPClient {
 	private long maxAge;
 	
 	public HTTPClient(String server, int port, boolean ssl, boolean disableCertificateCheck) throws UnknownHostException, IOException {
+		//System.out.println(server + " | " + port + " | " + ssl + " | " + disableCertificateCheck);
 		socket = SocketFactory.openConnection(server, port, ssl, disableCertificateCheck);
 		host = server;
 		is = socket.getInputStream();
 		os = socket.getOutputStream();
-		//socket.setSoTimeout(10_000);
+		socket.setSoTimeout(MAX_SOCKET_AGE_MILLIS);
 		resetAge();
 	}
 
 	public HTTPResult request(String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, HTTPResultEvent event) throws IOException {
 		resetAge();
+		//System.out.println(page + " | " + requestMethod + " | " + headerFields + " | " + (postData == null ? "null" : String.valueOf(postData.length)) + " | " + (event == null));
 		/*synchronized (this) {
 			isInUse = true;
 		}*/
@@ -70,8 +72,7 @@ public class HTTPClient {
 		for(Entry<String, String> e : headerFields.entrySet()){
 			sb.append(e.getKey()).append(": ").append(e.getValue()).append("\r\n");
 		}
-		
-		
+		//System.out.println("'"+sb.append("\r\n").toString()+"'");
 		os.write(sb.append("\r\n").toString().getBytes());
 		if(postData != null){
 			os.write(postData);
@@ -86,6 +87,8 @@ public class HTTPClient {
 			String line = readLine(is);
 			String[] tmp = line.split(" ");
 			if(tmp.length < 2){
+				disabled = true;
+				isInUse = false;
 				//return new HTTPResult(null, null, 0);
 				throw new SocketException("Invalid socket state: no HTTP header was received!");
 			}

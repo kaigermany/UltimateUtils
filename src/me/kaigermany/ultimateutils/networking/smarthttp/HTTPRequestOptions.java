@@ -18,11 +18,16 @@ public class HTTPRequestOptions {
 	public HTTPRequestOptions(String url){
 		String[] urlElements = parseUrl(url);
 		int port;
-		boolean ssl = urlElements[0] != null && urlElements[0].equals("https");
+		if(urlElements[0] != null){
+			useSSL = urlElements[0].equals("https");
+		}
 		if(urlElements[2] == null) {
-			port = ssl ? 443 : 80;
+			port = useSSL ? 443 : 80;
 		} else {
 			port = Integer.parseInt(urlElements[2]);
+			if(port == 443) {
+				useSSL = true;
+			}
 		}
 		this.server = urlElements[1];
 		this.port = port;

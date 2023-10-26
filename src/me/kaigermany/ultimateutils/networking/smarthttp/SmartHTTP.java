@@ -97,12 +97,22 @@ public class SmartHTTP {
 	}
 	
 	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck, HTTPResultEvent event) throws IOException {
-		boolean isConnectionCloseRequested = checkForConectionClose(headerFields);
-		if(isConnectionCloseRequested){
-			return new HTTPClient(server, port, ssl, disableCertificateCheck).request(page, requestMethod, headerFields, postData, event);
+		IOException exception = null;
+		for(int retrys = 0; retrys < 3; retrys++){
+			try{
+				boolean isConnectionCloseRequested = checkForConectionClose(headerFields);
+				if(isConnectionCloseRequested){
+					return new HTTPClient(server, port, ssl, disableCertificateCheck).request(page, requestMethod, headerFields, postData, event);
+				}
+				HTTPClient client = getOrCreateConnection(server, port, ssl, disableCertificateCheck, maxSocketCount);
+				return client.request(page, requestMethod, headerFields, postData, event);
+			}catch(IOException e){
+				if(exception == null) exception = e;
+				System.out.println("retry#" + (retrys + 1));
+			}
 		}
-		HTTPClient client = getOrCreateConnection(server, port, ssl, disableCertificateCheck, maxSocketCount);
-		return client.request(page, requestMethod, headerFields, postData, event);
+		if(exception == null) exception = new IOException("unknown error: all retrys failt");
+		throw exception;
 	}
 	
 	private static HTTPClient getOrCreateConnection(String server, int port, boolean ssl, boolean disableCertificateCheck, int maxSocketCount) throws UnknownHostException, IOException {
@@ -220,6 +230,17 @@ public class SmartHTTP {
 							int canBeDeletedCount = 0;
 							for(HTTPClient client : list){
 								if(client.canBeDeleted(currentTime)) canBeDeletedCount++;
+							}
+							
+							{
+								HTTPClientCount counterInstance = clientInstanceCounts.get(k);
+								if(counterInstance != null){
+									counterInstance.value -= canBeDeletedCount;
+									if(counterInstance.value == 0){
+										clientInstanceCounts.remove(k);
+									}
+									counterInstance = null;
+								}
 							}
 							
 							if(canBeDeletedCount == list.size()){//drop list
