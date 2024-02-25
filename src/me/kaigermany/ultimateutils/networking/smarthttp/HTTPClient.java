@@ -104,7 +104,17 @@ public class HTTPClient {
 				String kk = k.toLowerCase();
 				if(kk.equals("content-length")) len = v;
 				if(kk.equals("transfer-encoding") && v.equals("chunked")) isChunkedEncoding = true;
-				resultHeader.put(k, v);
+				if(resultHeader.containsKey(k)){
+					int n = 0;
+					String k2;
+					do {
+						n++;
+						k2 = k + "_" + n;
+					}while(resultHeader.containsKey(k2));
+					resultHeader.put(k2, v);
+				} else {
+					resultHeader.put(k, v);
+				}
 			}
 		}
 		
