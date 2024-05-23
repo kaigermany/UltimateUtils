@@ -4,13 +4,18 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
 //TODO test
 public class SmartHTTP {
 	private static int NUM_MAX_CONNECTIONS_PER_SERVER = 10;
-	private static HashMap<String, ArrayList<HTTPClient>> clientInstances = new HashMap<String, ArrayList<HTTPClient>>();
-	private static HashMap<String, HTTPClientCount> clientInstanceCounts = new HashMap<String, HTTPClientCount>();
+	//private static HashMap<String, ArrayList<HTTPClient>> clientInstances = new HashMap<String, ArrayList<HTTPClient>>();
+	//private static HashMap<String, HTTPClientCount> clientInstanceCounts = new HashMap<String, HTTPClientCount>();
 	private static int WATCHDOG_SLEEP_CYCLE = 60 * 1000;
+	private static HashMap<String, LinkedList<HTTPClient>> clientInstancesActive = new HashMap<String, LinkedList<HTTPClient>>();
+	private static HashMap<String, LinkedList<HTTPClient>> clientInstancesIdle = new HashMap<String, LinkedList<HTTPClient>>();
+	private static HashMap<HTTPClient, String> instanceTable = new HashMap<HTTPClient, String>();
 	
 	private static class HTTPClientCount {
 		int value;
@@ -99,15 +104,18 @@ public class SmartHTTP {
 	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck, HTTPResultEvent event) throws IOException {
 		IOException exception = null;
 		for(int retrys = 0; retrys < 3; retrys++){
+			HTTPClient client = null;
 			try{
 				boolean isConnectionCloseRequested = checkForConectionClose(headerFields);
 				if(isConnectionCloseRequested){
 					return new HTTPClient(server, port, ssl, disableCertificateCheck).request(page, requestMethod, headerFields, postData, event);
 				}
-				HTTPClient client = getOrCreateConnection(server, port, ssl, disableCertificateCheck, maxSocketCount);
+				client = getOrCreateConnection(server, port, ssl, disableCertificateCheck, maxSocketCount);
 				return client.request(page, requestMethod, headerFields, postData, event);
 			}catch(IOException e){
+				if(client != null) client.close();
 				if(exception == null) exception = e;
+				e.printStackTrace();
 				System.out.println("retry#" + (retrys + 1));
 			}
 		}
@@ -116,8 +124,43 @@ public class SmartHTTP {
 	}
 	
 	private static HTTPClient getOrCreateConnection(String server, int port, boolean ssl, boolean disableCertificateCheck, int maxSocketCount) throws UnknownHostException, IOException {
+		if(maxSocketCount <= 0) return null;
+		
 		String searchKey = server + "&" + port + "&" + ssl + "&" + disableCertificateCheck;
 		
+		while(true){
+			synchronized (clientInstancesActive) {
+				LinkedList<HTTPClient> active = clientInstancesActive.computeIfAbsent(searchKey, k->new LinkedList<HTTPClient>());
+				LinkedList<HTTPClient> idle = clientInstancesIdle.computeIfAbsent(searchKey, k->new LinkedList<HTTPClient>());
+				if(active.size() < maxSocketCount){
+					if(idle.size() == 0) {
+						
+							HTTPClient clientInstance = new HTTPClient(server, port, ssl, disableCertificateCheck);//TODO potential to freeze other threads here!
+							active.add(clientInstance);
+							instanceTable.put(clientInstance, searchKey);
+							tryStartWatchDog();
+							return clientInstance;
+						//}
+					} else {
+						//if(active.size() < maxSocketCount){
+							HTTPClient clientInstance = idle.remove();
+							if(!clientInstance.tryClaim()){
+								System.err.println("WARNING: Invalid HTTPClient instance found!");
+								instanceTable.remove(clientInstance);
+							} else {
+								active.add(clientInstance);
+								return clientInstance;
+							}
+						//}
+					}
+				}
+					
+			}
+			
+			sleep(50);
+		}
+		
+		/*
 		HTTPClient clientInstance = null;
 		int count = 0;
 		synchronized (clientInstances) {
@@ -182,6 +225,17 @@ public class SmartHTTP {
 		}
 		
 		return clientInstance;
+		*/
+	}
+	
+	public static void markInstanceAsUnused(HTTPClient client){
+		synchronized (clientInstancesActive) {
+			String searchKey = instanceTable.get(client);
+			LinkedList<HTTPClient> active = clientInstancesActive.computeIfAbsent(searchKey, k->new LinkedList<HTTPClient>());
+			LinkedList<HTTPClient> idle = clientInstancesIdle.computeIfAbsent(searchKey, k->new LinkedList<HTTPClient>());
+			active.remove(client);
+			idle.add(client);
+		}
 	}
 	
 	private static void sleep(int ms){
@@ -219,6 +273,24 @@ public class SmartHTTP {
 					}
 					boolean onExit = false;
 					long currentTime = System.currentTimeMillis();
+					
+					synchronized (clientInstancesActive) {
+						LinkedList<HTTPClient> todoDelete = new LinkedList<HTTPClient>();
+						for(LinkedList<HTTPClient> clients : clientInstancesIdle.values()){
+							for(HTTPClient c : clients){
+								if(c.canBeDeleted(currentTime)){
+									instanceTable.remove(c);
+									todoDelete.add(c);
+								}
+							}
+							if(todoDelete.size() > 0){
+								clients.removeAll(todoDelete);
+								clients.clear();
+							}
+						}
+					}
+					
+					/*
 					synchronized (clientInstances) {
 						for(String k : new ArrayList<String>(clientInstances.keySet())){
 							ArrayList<HTTPClient> list = clientInstances.get(k);
@@ -259,7 +331,7 @@ public class SmartHTTP {
 								}
 								clientInstances.put(k, newList);
 							} else if(canBeDeletedCount > 0){//pick single elements and remove them
-								for(int i=list.size(); i>=0; i--){
+								for(int i=list.size()-1; i>=0; i--){
 									if(list.get(i).canBeDeleted(currentTime)) {
 										list.remove(i).close();
 									}
@@ -271,6 +343,7 @@ public class SmartHTTP {
 							instance = null;
 						}
 					}
+					*/
 					if(onExit) break;
 				}
 			}

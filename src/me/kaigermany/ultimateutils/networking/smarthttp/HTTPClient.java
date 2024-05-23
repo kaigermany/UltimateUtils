@@ -126,7 +126,7 @@ public class HTTPClient {
 				returningResult = new HTTPResult(null, resultHeader, responseCode);
 				WrappedInputStream wis = new WrappedInputStream() {
 					//int chunkSize = 1;
-					int capacityLeft = Integer.parseInt(readLine(is).trim(), 16);;
+					int capacityLeft = Integer.parseInt(readLine(is).trim(), 16);
 					@Override
 					public int read(byte[] buf, int off, int len) throws IOException {
 						if(capacityLeft == -1) return -1;
@@ -224,6 +224,9 @@ public class HTTPClient {
 		synchronized (this) {
 			isInUse = false;
 		}
+		
+		SmartHTTP.markInstanceAsUnused(this);
+		
 		return returningResult;
 	}
 
@@ -259,6 +262,10 @@ public class HTTPClient {
 			}
 		}
 		return b;
+	}
+	
+	public boolean isDisabled(){
+		return disabled;
 	}
 
 	public static abstract class WrappedInputStream extends InputStream{
