@@ -1,21 +1,37 @@
 package me.kaigermany.ultimateutils.sync.thread;
 
+import java.util.Iterator;
 import java.util.function.Consumer;
 
 public class Parallel {
 	public static void exec(int numIterations, Consumer<Integer> function){
 		int numThreads = Runtime.getRuntime().availableProcessors();
 		ThreadWorker[] cpu = new ThreadWorker[numThreads];
-		ProcessorQueue queue = new ProcessorQueue();
+		ProcessorQueue queue = new ProcessorQueue(new Iterator<AsyncRunnable>() {
+			final int max = numIterations;
+			volatile int curr;
+			
+			@Override
+			public AsyncRunnable next() {
+				AsyncRunnable instance = new IterativeRunnable(curr, function);
+				curr++;
+				return instance;
+			}
+			
+			@Override
+			public boolean hasNext() {
+				return curr < max;
+			}
+		});
 		for(int i=0; i<numThreads; i++){
 			cpu[i] = new ThreadWorker(queue);
 			//cpu[i].setQueueSource(queue);
 		}
-		
+		/*
 		for(int i=0; i<numIterations; i++){
 			queue.add(new IterativeRunnable(i, function));
 		}
-		
+		*/
 		for(int i=0; i<numThreads; i++){
 			cpu[i].notifyStart();
 		}
