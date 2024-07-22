@@ -2,12 +2,10 @@ package me.kaigermany.ultimateutils.networking.smarthttp;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Map.Entry;
-//TODO test
+
 public class SmartHTTP {
 	private static int NUM_MAX_CONNECTIONS_PER_SERVER = 10;
 	//private static HashMap<String, ArrayList<HTTPClient>> clientInstances = new HashMap<String, ArrayList<HTTPClient>>();
@@ -16,11 +14,11 @@ public class SmartHTTP {
 	private static HashMap<String, LinkedList<HTTPClient>> clientInstancesActive = new HashMap<String, LinkedList<HTTPClient>>();
 	private static HashMap<String, LinkedList<HTTPClient>> clientInstancesIdle = new HashMap<String, LinkedList<HTTPClient>>();
 	private static HashMap<HTTPClient, String> instanceTable = new HashMap<HTTPClient, String>();
-	
+	/*
 	private static class HTTPClientCount {
 		int value;
 	}
-	
+	*/
 	public static HTTPResult request(String url, String requestMethod, HashMap<String, String> headerFields, byte[] postData) throws IOException {
 		String[] urlElements = parseUrl(url);
 		int port;
@@ -159,73 +157,6 @@ public class SmartHTTP {
 			
 			sleep(50);
 		}
-		
-		/*
-		HTTPClient clientInstance = null;
-		int count = 0;
-		synchronized (clientInstances) {
-			count = clientInstanceCounts.getOrDefault(searchKey, new HTTPClientCount()).value;
-			ArrayList<HTTPClient> list = clientInstances.get(searchKey);
-			if(list != null){
-				for(HTTPClient client : list){
-					if(client.tryClaim()) {
-						clientInstance = client;
-						//clientInstanceCounts.get(searchKey).value++;
-						break;
-					}
-				}
-			}
-		}
-		if(clientInstance != null){
-			return clientInstance;
-		}
-		
-		if(count == maxSocketCount){
-			sleep(50);
-			boolean loop = true;
-			while(loop){
-				synchronized (clientInstances) {
-					HTTPClientCount counterInstance = clientInstanceCounts.get(searchKey);
-					if(counterInstance == null) clientInstanceCounts.put(searchKey, counterInstance = new HTTPClientCount());
-					count = counterInstance.value;
-					ArrayList<HTTPClient> list = clientInstances.get(searchKey);
-					if(list != null){
-						for(HTTPClient client : list){
-							if(client.tryClaim()) {
-								clientInstance = client;
-								loop = false;
-								break;
-							}
-						}
-					}
-					
-					if(clientInstanceCounts.get(searchKey).value < maxSocketCount){
-						loop = false;
-					}
-				}
-				if(clientInstance != null){
-					return clientInstance;
-				}
-				sleep(100);
-			}
-		}
-		
-		clientInstance = new HTTPClient(server, port, ssl, disableCertificateCheck);
-		
-		synchronized (clientInstances) {
-			ArrayList<HTTPClient> list = clientInstances.get(searchKey);
-			if(list == null){
-				list = new ArrayList<HTTPClient>(maxSocketCount);
-				clientInstances.put(searchKey, list);
-				clientInstanceCounts.put(searchKey, new HTTPClientCount());
-			}
-			list.add(clientInstance);
-			clientInstanceCounts.get(searchKey).value++;
-			tryStartWatchDog();
-		}
-		
-		return clientInstance;
-		*/
 	}
 	
 	public static void markInstanceAsUnused(HTTPClient client){
@@ -289,61 +220,6 @@ public class SmartHTTP {
 							}
 						}
 					}
-					
-					/*
-					synchronized (clientInstances) {
-						for(String k : new ArrayList<String>(clientInstances.keySet())){
-							ArrayList<HTTPClient> list = clientInstances.get(k);
-							if(list == null || list.size() == 0){
-								clientInstances.remove(k);
-								continue;
-							}
-							
-							int canBeDeletedCount = 0;
-							for(HTTPClient client : list){
-								if(client.canBeDeleted(currentTime)) canBeDeletedCount++;
-							}
-							
-							{
-								HTTPClientCount counterInstance = clientInstanceCounts.get(k);
-								if(counterInstance != null){
-									counterInstance.value -= canBeDeletedCount;
-									if(counterInstance.value == 0){
-										clientInstanceCounts.remove(k);
-									}
-									counterInstance = null;
-								}
-							}
-							
-							if(canBeDeletedCount == list.size()){//drop list
-								clientInstances.remove(k);
-								for(HTTPClient client : list){
-									client.close();
-								}
-							} else if(canBeDeletedCount >= list.size() / 2){//shrink list
-								ArrayList<HTTPClient> newList = new ArrayList<HTTPClient>((list.size() - canBeDeletedCount) + 1);
-								for(HTTPClient client : list){
-									if(client.canBeDeleted(currentTime)) {
-										client.close();
-									} else {
-										newList.add(client);
-									}
-								}
-								clientInstances.put(k, newList);
-							} else if(canBeDeletedCount > 0){//pick single elements and remove them
-								for(int i=list.size()-1; i>=0; i--){
-									if(list.get(i).canBeDeleted(currentTime)) {
-										list.remove(i).close();
-									}
-								}
-							}
-						}
-						onExit = clientInstances.size() == 0;
-						if(onExit){
-							instance = null;
-						}
-					}
-					*/
 					if(onExit) break;
 				}
 			}

@@ -15,7 +15,6 @@ import java.util.Map.Entry;
 
 import me.kaigermany.ultimateutils.networking.util.SocketFactory;
 
-//TODO test
 public class HTTPClient {
 	private static final HashMap<String, String> DEFAULT_HEADER;
 	private static final byte[] DUMMY_BUFFER = new byte[4096];

@@ -25,14 +25,6 @@ public class Parallel {
 		});
 		for(int i=0; i<numThreads; i++){
 			cpu[i] = new ThreadWorker(queue);
-			//cpu[i].setQueueSource(queue);
-		}
-		/*
-		for(int i=0; i<numIterations; i++){
-			queue.add(new IterativeRunnable(i, function));
-		}
-		*/
-		for(int i=0; i<numThreads; i++){
 			cpu[i].notifyStart();
 		}
 		
