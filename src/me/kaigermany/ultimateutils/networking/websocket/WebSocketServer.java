@@ -13,7 +13,7 @@ public class WebSocketServer extends WebSocketBasic {
 	 * @param is InputStream
 	 * @param os OutputStream
 	 * @param event Event callbacks
-	 * @throws IOException if something stupid happens
+	 * @throws IOException if communications fail in some way.
 	 */
 	public WebSocketServer(InputStream is, OutputStream os, WebSocketEvent event) throws IOException {
 		super(is, os, event, true);
@@ -25,7 +25,7 @@ public class WebSocketServer extends WebSocketBasic {
 	 * Handle given socket as WebSocket endpoint
 	 * @param socket accepted Socket of the webserver
 	 * @param event Event callbacks
-	 * @throws IOException if something stupid happens
+	 * @throws IOException if communications fail in some way.
 	 */
 	public WebSocketServer(Socket socket, WebSocketEvent event) throws IOException {
 		super(socket, event, true);
@@ -38,7 +38,7 @@ public class WebSocketServer extends WebSocketBasic {
 	 * @param is InputStream
 	 * @param os OutputStream
 	 * @param event Event callbacks
-	 * @throws IOException if something stupid happens
+	 * @throws IOException if communications fail in some way.
 	 */
 	public WebSocketServer(InputStream is, OutputStream os, WebSocketEvent event, Map<String, String> httpHeaders) throws IOException {
 		super(is, os, event, true);
@@ -50,7 +50,7 @@ public class WebSocketServer extends WebSocketBasic {
 	 * Handle given socket as WebSocket endpoint
 	 * @param socket accepted Socket of the webserver
 	 * @param event Event callbacks
-	 * @throws IOException if something stupid happens
+	 * @throws IOException if communications fail in some way.
 	 */
 	public WebSocketServer(Socket socket, WebSocketEvent event, Map<String, String> httpHeaders) throws IOException {
 		super(socket, event, true);
@@ -60,7 +60,7 @@ public class WebSocketServer extends WebSocketBasic {
 
 	/**
 	 * Initiates the WebSocket Upgrade
-	 * @throws IOException if something stupid happens
+	 * @throws IOException if read fails.
 	 */
 	protected void init() throws IOException {
 		String r;
@@ -74,26 +74,30 @@ public class WebSocketServer extends WebSocketBasic {
 			}
 		} while (r.length() >= 4);
 
-		key = calculateResponseSecret(key);
-
-		dos.write(("HTTP/1.1 101 Switching Protocols\n" + "Upgrade: websocket\r\n" + "Connection: Upgrade\r\n"
-				+ "Sec-WebSocket-Accept: " + key + "\r\n" +
-				"\r\n").getBytes());
-		dos.flush();
+		sendResponceKey(key);
 	}
 
 	/**
 	 * Initiates the WebSocket Upgrade
-	 * @throws IOException if something stupid happens
+	 * @throws IOException if write fails.
 	 */
 	protected void init(Map<String, String> header) throws IOException {
-		if (!header.containsKey("Sec-WebSocket-Key")) {
+		String key = header.get("Sec-WebSocket-Key");
+
+		if (key == null) {
 			throw new IllegalStateException("Websocket header has no Sec-WebSocket-Key Header");
-		} else {
-			String key = (String)header.get("Sec-WebSocket-Key");
-			key = calculateResponseSecret(key);
-			this.dos.write(("HTTP/1.1 101 Switching Protocols\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: " + key + "\r\n\r\n").getBytes());
-			this.dos.flush();
 		}
+
+		sendResponceKey(key);
+	}
+	
+	/*
+	 * Converts the given key and submit the generated response.
+	 * @throws IOException if write fails.
+	 */
+	protected void sendResponceKey(String key) throws IOException {
+		key = calculateResponseSecret(key);
+		dos.write(("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: " + key + "\r\n\r\n").getBytes());
+		dos.flush();
 	}
 }
