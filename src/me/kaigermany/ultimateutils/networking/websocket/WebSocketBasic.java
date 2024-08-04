@@ -52,7 +52,10 @@ public abstract class WebSocketBasic {
 				event.onOpen(this);
 				receivePackets();
 			} catch (Exception ex) {
-				if(alive) event.onError(ex.getMessage(), ex);
+				if(alive) {
+					event.onError(ex.getMessage(), ex);
+					event.onError(this, ex.getMessage(), ex);
+				}
 				alive = false;
 			}
 		});
@@ -71,6 +74,7 @@ public abstract class WebSocketBasic {
 			writeFrame(data.getBytes(StandardCharsets.UTF_8), OPCODE_TEXT_FRAME);
 		} catch (IOException ex) {
 			event.onError("Failed to write frame: " + ex.getMessage(), ex);
+			event.onError(this, "Failed to write frame: " + ex.getMessage(), ex);
 		}
 	}
 
@@ -85,6 +89,7 @@ public abstract class WebSocketBasic {
 			writeFrame(data, OPCODE_BINARY_FRAME);
 		} catch (IOException ex) {
 			event.onError("Failed to write frame: " + ex.getMessage(), ex);
+			event.onError(this, "Failed to write frame: " + ex.getMessage(), ex);
 		}
 	}
 
@@ -152,6 +157,7 @@ public abstract class WebSocketBasic {
 					event.onError(this, "Connection close message: " + errorText, new SocketException(errorText));
 				}
 				event.onClose();
+				event.onClose(this);
 				return;
 			}
 		}
