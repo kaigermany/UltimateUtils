@@ -224,13 +224,15 @@ public class DynamicByteArrayStorage {
 		// private long maxFileLength;
 		private volatile BitMapTable bitmap;
 		private volatile HashSet<long[]> allocatedRegionRefs = new HashSet<long[]>(1024);
-
+		private final File fileOnDrive;
+		
 		public DiskStorageFile(File file, long maxFileLength) throws IOException {
 			this(file, maxFileLength, 4096);
 		}
 
 		public DiskStorageFile(File file, long maxFileLength, int pageSize) throws IOException {
 			this.pageSize = pageSize;
+			this.fileOnDrive = file;
 			this.raf = new RandomAccessFile(file, "rwd");
 			long maxFilePagesLength = maxFileLength / pageSize;
 			this.bitmap = new BitMapTable(maxFilePagesLength);
@@ -327,12 +329,13 @@ public class DynamicByteArrayStorage {
 			}
 		}
 
-		private void write(DynamicByteArray data) throws IOException {
+		private boolean write(DynamicByteArray data) throws IOException {
 			synchronized (raf) {
 				long pos = data.externalBufferPos * pageSize;
 				{
 					long localLen = pos + data.externalBufferLen;
 					if (localLen > fileLength) {
+						if(!checkDiskCapacity(data.externalBufferLen)) return false;
 						fileLength = localLen;
 						raf.setLength(fileLength);
 					}
@@ -346,6 +349,12 @@ public class DynamicByteArrayStorage {
 
 				// data.localBuffer = out;
 			}
+			return true;
+		}
+		
+		private boolean checkDiskCapacity(long additionalBytesNeeded){
+			additionalBytesNeeded += 100 << 20;//lets left at lest 100 MB free for FileSystem or Operating System stuff...
+			return fileOnDrive.getUsableSpace() > additionalBytesNeeded;
 		}
 	}
 
