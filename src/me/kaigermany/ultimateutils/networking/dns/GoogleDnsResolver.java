@@ -17,6 +17,9 @@ public class GoogleDnsResolver implements DnsResolver{
 		if (hostname.equals("dns.google.com")) {
 			return InetAddress.getByAddress(hostname, new byte[]{8, 8, 4, 4});
 		}
+		if (hostname.equals("localhost")) {
+			return InetAddress.getByAddress(hostname, new byte[]{127, 0, 0, 1});
+		}
 		
 		String ipText = runDnsRequest(hostname);
 		System.out.println(hostname + " -> " + ipText);
