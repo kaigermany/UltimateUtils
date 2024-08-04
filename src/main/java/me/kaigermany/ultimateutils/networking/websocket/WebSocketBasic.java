@@ -94,6 +94,7 @@ public abstract class WebSocketBasic {
 	public void close() {
 		alive = false;
 		event.onClose();
+		event.onClose(this);
 	}
 
 	/**
@@ -148,6 +149,7 @@ public abstract class WebSocketBasic {
 				if (data.length > 0){
 					String errorText = new String(data, StandardCharsets.UTF_8);
 					event.onError("Connection close message: " + errorText, new SocketException(errorText));
+					event.onError(this, "Connection close message: " + errorText, new SocketException(errorText));
 				}
 				event.onClose();
 				return;
