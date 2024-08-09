@@ -10,6 +10,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
@@ -86,6 +87,10 @@ public class HTTPClient {
 			String line = readLine(is);
 			String[] tmp = line.split(" ");
 			if(tmp.length < 2){
+				System.err.println("line="+line);
+				System.err.println("tmp="+Arrays.toString(tmp));
+				System.err.println("nextline="+readLine(is));
+				
 				disabled = true;
 				isInUse = false;
 				//return new HTTPResult(null, null, 0);
@@ -130,10 +135,11 @@ public class HTTPClient {
 					public int read(byte[] buf, int off, int len) throws IOException {
 						if(capacityLeft == -1) return -1;
 						if(capacityLeft == 0){
-							readLine(is);//must be done here says specifications on Wikipedia. https://en.wikipedia.org/wiki/Chunked_transfer_encoding#Example
+							readLine(is);
 							capacityLeft = Integer.parseInt(readLine(is).trim(), 16);
 							if(capacityLeft == 0){
 								capacityLeft = -1;
+								readLine(is);//must be done as very last action says specifications on Wikipedia. https://en.wikipedia.org/wiki/Chunked_transfer_encoding#Example
 								return -1;
 							}
 						}
