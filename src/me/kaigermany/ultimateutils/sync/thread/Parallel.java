@@ -6,6 +6,9 @@ import java.util.function.Consumer;
 public class Parallel {
 	public static void exec(int numIterations, Consumer<Integer> function){
 		int numThreads = Runtime.getRuntime().availableProcessors();
+		exec(numIterations, function, numThreads);
+	}
+	public static void exec(int numIterations, Consumer<Integer> function, int numThreads){
 		ThreadWorker[] cpu = new ThreadWorker[numThreads];
 		ProcessorQueue queue = new ProcessorQueue(new Iterator<AsyncRunnable>() {
 			final int max = numIterations;
