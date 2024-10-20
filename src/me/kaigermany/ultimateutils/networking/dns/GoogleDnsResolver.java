@@ -7,6 +7,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 
 public class GoogleDnsResolver implements DnsResolver{
 
@@ -23,10 +24,19 @@ public class GoogleDnsResolver implements DnsResolver{
 		
 		String ipText = runDnsRequest(hostname);
 		System.out.println(hostname + " -> " + ipText);
-		return InetAddress.getByAddress(hostname, textToNumericFormatV4(ipText));
+		byte[] ipv4Bytes = textToNumericFormatV4(ipText);
+		//System.out.println("ipv4Bytes = " + Arrays.toString(ipv4Bytes));
+		if(ipv4Bytes == null) {
+			return resolve(ipText);
+		}
+		return InetAddress.getByAddress(hostname, ipv4Bytes);
 	}
 	
-	private static String runDnsRequest(String link) {
+	private static String runDnsRequest(String link) throws UnknownHostException {
+		if(link.indexOf('.') == -1){
+			throw new UnknownHostException("invalid dns name: " + link);
+		}
+		
 		@SuppressWarnings("deprecation")
 		String resp = new String(serverGet("https://dns.google.com/resolve?name=" + URLEncoder.encode(link) + "&type=A"));
 		//System.out.println(resp);
