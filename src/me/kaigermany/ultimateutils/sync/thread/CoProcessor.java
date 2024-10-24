@@ -8,7 +8,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-//EXPERIMENTAL
 public class CoProcessor {
 	private static final int numThreads = Runtime.getRuntime().availableProcessors();
 	private static final ThreadWorker[] cpu = new ThreadWorker[numThreads];
@@ -46,6 +45,7 @@ public class CoProcessor {
 	
 	private HashSet<AsyncRunnable> activeJobs = new HashSet<>();
 	private ThreadLock awaitLock = new ThreadLock();
+	
 	private CoProcessor(){}
 	
 	public void awaitAllJobs(){
@@ -153,17 +153,13 @@ public class CoProcessor {
 		return this;
 	}
 	
-	private boolean isFinished(AsyncRunnable r){
+	private void finishJob(AsyncRunnable r){
 		boolean done;
 		synchronized (activeJobs) {
 			activeJobs.remove(r);
 			done = activeJobs.isEmpty();
 		}
-		return done;
-	}
-	
-	private void finishJob(AsyncRunnable r){
-		if(isFinished(r)){
+		if(done){
 			awaitLock.unlock();
 		}
 	}
