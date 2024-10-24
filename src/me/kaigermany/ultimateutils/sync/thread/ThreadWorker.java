@@ -8,24 +8,21 @@ public class ThreadWorker {
 	
 	public ThreadWorker(ProcessorQueue queue){
 		this.queue = queue;
-		startThread();
 		awaitLock = new ThreadLock();
+		//if(!queue.isEmpty()) 
+		notifyStart();
 	}
 	
 	public void notifyStart(){
 		awaitLock.lock();
 		synchronized (ThreadWorker.this) {
 			if(!isWorking) {
-				startThread();
+				Thread thread = new Thread(()->runLoop());
+				thread.setDaemon(true);
+				thread.start();
 			}
 			isWorking = true;
 		}
-	}
-	
-	private void startThread(){
-		Thread thread = new Thread(()->runLoop());
-		thread.setDaemon(true);
-		thread.start();
 	}
 	
 	private void runLoop(){
@@ -33,12 +30,11 @@ public class ThreadWorker {
 		try {
 			while (isAlive) {
 				queue.poll((func) -> {
+					functionPointer[0] = func;
 					if (func == null) {
 						synchronized (ThreadWorker.this) {
 							isWorking = false;
 						}
-					} else {
-						functionPointer[0] = func;
 					}
 				});
 

@@ -26,4 +26,12 @@ public class ProcessorQueue {
 	public void awaitDone() {
 		awaitLock.enterBlock();
 	}
+	
+	public boolean isEmpty(){
+		boolean empty;
+		synchronized (queue) {
+			empty = !queue.hasNext();
+		}
+		return empty;
+	}
 }

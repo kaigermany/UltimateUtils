@@ -8,24 +8,11 @@ public class Parallel {
 		int numThreads = Runtime.getRuntime().availableProcessors();
 		exec(numIterations, function, numThreads);
 	}
-	public static void exec(int numIterations, Consumer<Integer> function, int numThreads){
+	public static void exec(final int numIterations, Consumer<Integer> function, int numThreads){
 		ThreadWorker[] cpu = new ThreadWorker[numThreads];
-		ProcessorQueue queue = new ProcessorQueue(new Iterator<AsyncRunnable>() {
-			final int max = numIterations;
-			volatile int curr;
-			
-			@Override
-			public AsyncRunnable next() {
-				AsyncRunnable instance = new IterativeRunnable(curr, function);
-				curr++;
-				return instance;
-			}
-			
-			@Override
-			public boolean hasNext() {
-				return curr < max;
-			}
-		});
+		
+		ProcessorQueue queue = new ProcessorQueue(new QueueIterator(numIterations, function));
+		
 		for(int i=0; i<numThreads; i++){
 			cpu[i] = new ThreadWorker(queue);
 			cpu[i].notifyStart();
@@ -35,7 +22,7 @@ public class Parallel {
 		
 		for(int i=0; i<numThreads; i++){
 			cpu[i].awaitIdle();
-			cpu[i].stop();
+			//cpu[i].stop();
 		}
 	}
 	
@@ -53,5 +40,35 @@ public class Parallel {
 			function.accept(id);
 		}
 		
+	}
+	
+	public static class QueueIterator implements Iterator<AsyncRunnable> {
+		private final Consumer<Integer> function;
+		private final int max;
+		private volatile int curr = 0;
+		
+		public QueueIterator(int counterMaxValue, Consumer<Integer> function){
+			this.function = function;
+			this.max = counterMaxValue;
+		}
+		
+		@Override
+		public boolean hasNext() {
+			boolean hasNextResult;
+			synchronized (this) {
+				hasNextResult = curr < max;
+			}
+			return hasNextResult;
+		}
+		
+		@Override
+		public AsyncRunnable next() {
+			AsyncRunnable instance;
+			synchronized (this) {
+				instance = new IterativeRunnable(curr, function);
+				curr++;
+			}
+			return instance;
+		}
 	}
 }
