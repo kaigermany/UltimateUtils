@@ -273,7 +273,6 @@ public class WebSocket extends WebSocketBasic {
 			socket.close();
 		} catch (IOException e) {
 			alive = false;
-			event.onError(e.getMessage(), e);
 			event.onError(this, e.getMessage(), e);
 		}
 	}

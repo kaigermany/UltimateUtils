@@ -53,7 +53,6 @@ public abstract class WebSocketBasic {
 				receivePackets();
 			} catch (Exception ex) {
 				if(alive) {
-					event.onError(ex.getMessage(), ex);
 					event.onError(this, ex.getMessage(), ex);
 				}
 				alive = false;
@@ -73,7 +72,6 @@ public abstract class WebSocketBasic {
 		try {
 			writeFrame(data.getBytes(StandardCharsets.UTF_8), OPCODE_TEXT_FRAME);
 		} catch (IOException ex) {
-			event.onError("Failed to write frame: " + ex.getMessage(), ex);
 			event.onError(this, "Failed to write frame: " + ex.getMessage(), ex);
 		}
 	}
@@ -88,7 +86,6 @@ public abstract class WebSocketBasic {
 		try {
 			writeFrame(data, OPCODE_BINARY_FRAME);
 		} catch (IOException ex) {
-			event.onError("Failed to write frame: " + ex.getMessage(), ex);
 			event.onError(this, "Failed to write frame: " + ex.getMessage(), ex);
 		}
 	}
@@ -98,7 +95,6 @@ public abstract class WebSocketBasic {
 	 */
 	public void close() {
 		alive = false;
-		event.onClose();
 		event.onClose(this);
 	}
 
@@ -153,10 +149,8 @@ public abstract class WebSocketBasic {
 			} else if (opCode == OPCODE_CONNECTION_CLOSE) {
 				if (data.length > 0){
 					String errorText = new String(data, StandardCharsets.UTF_8);
-					event.onError("Connection close message: " + errorText, new SocketException(errorText));
 					event.onError(this, "Connection close message: " + errorText, new SocketException(errorText));
 				}
-				event.onClose();
 				event.onClose(this);
 				return;
 			}
