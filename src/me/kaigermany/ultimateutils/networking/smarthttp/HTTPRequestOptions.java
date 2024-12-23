@@ -60,8 +60,8 @@ public class HTTPRequestOptions {
 	public String getRequestMethod(){
 		return requestMethod;
 	}
-	//TODO rename!!!
-	public HTTPRequestOptions setRequestMethod(HashMap<String, String> headerFields){
+	
+	public HTTPRequestOptions setRequestParameters(HashMap<String, String> headerFields){
 		this.headerFields = headerFields;
 		return this;
 	}
