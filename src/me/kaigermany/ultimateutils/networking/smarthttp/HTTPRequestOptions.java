@@ -14,6 +14,7 @@ public class HTTPRequestOptions {
 	private boolean useSSL;
 	private boolean disableCertificateCheck;
 	private HTTPResultEvent event;
+	private int numRetrys = 3;
 	
 	public HTTPRequestOptions(String url){
 		String[] urlElements = parseUrl(url);
@@ -113,6 +114,21 @@ public class HTTPRequestOptions {
 	
 	public HTTPResultEvent getEvent(){
 		return event;
+	}
+	
+	public HTTPRequestOptions setRetryCount(int count){
+		if(count < 1) throw new IllegalArgumentException("retries must be at least 1 or higher");
+		this.numRetrys = count;
+		return this;
+	}
+	
+	public HTTPRequestOptions setNoRetrys(){
+		this.numRetrys = 1;
+		return this;
+	}
+
+	public int getRetryCount() {
+		return numRetrys;
 	}
 	
 	public HTTPRequestOptions dublicate(){

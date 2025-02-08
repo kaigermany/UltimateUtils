@@ -96,12 +96,14 @@ public class SmartHTTP {
 	public static HTTPResult request(HTTPRequestOptions options) throws IOException {
 		return request(options.getServer(), options.getPort(), options.getPage(), options.getRequestMethod(),
 				options.getHeaderFields(), options.getPostData(), options.getMaxSocketCount(),
-				options.getUseSSL(), options.getDisableCertificateCheck(), options.getEvent());
+				options.getUseSSL(), options.getDisableCertificateCheck(), options.getEvent(), options.getRetryCount());
 	}
-	
 	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck, HTTPResultEvent event) throws IOException {
+		return request(server, port, page, requestMethod, headerFields, postData, maxSocketCount, ssl, disableCertificateCheck, event, 3);
+	}
+	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck, HTTPResultEvent event, int numRetrys) throws IOException {
 		IOException exception = null;
-		for(int retrys = 0; retrys < 3; retrys++){
+		for(int retrys = 0; retrys < numRetrys; retrys++){
 			HTTPClient client = null;
 			try{
 				boolean isConnectionCloseRequested = checkForConectionClose(headerFields);
