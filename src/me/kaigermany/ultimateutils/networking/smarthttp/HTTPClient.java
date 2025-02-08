@@ -45,15 +45,16 @@ public class HTTPClient {
 		resetAge();
 	}
 
-	public HTTPResult request(String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, HTTPResultEvent event) throws IOException {
+	public HTTPResult request(String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, HTTPResultEvent event, boolean noDefaultHeader) throws IOException {
 		resetAge();
 		if(page == null || page.length() == 0 || page.charAt(0) != '/') page = "/" + (page == null ? "" : page);
 		if(requestMethod == null) requestMethod = "GET";
 		if(headerFields == null) headerFields = new HashMap<String, String>();
-		
-		for(Entry<String, String> e : DEFAULT_HEADER.entrySet()){
-			if(headerFields.containsKey(e.getKey())) continue;
-			headerFields.put(e.getKey(), e.getValue());
+		if(!noDefaultHeader){
+			for(Entry<String, String> e : DEFAULT_HEADER.entrySet()){
+				if(headerFields.containsKey(e.getKey())) continue;
+				headerFields.put(e.getKey(), e.getValue());
+			}
 		}
 		headerFields.putIfAbsent("Host", host);
 		

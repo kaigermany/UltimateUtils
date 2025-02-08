@@ -96,22 +96,22 @@ public class SmartHTTP {
 	public static HTTPResult request(HTTPRequestOptions options) throws IOException {
 		return request(options.getServer(), options.getPort(), options.getPage(), options.getRequestMethod(),
 				options.getHeaderFields(), options.getPostData(), options.getMaxSocketCount(),
-				options.getUseSSL(), options.getDisableCertificateCheck(), options.getEvent(), options.getRetryCount());
+				options.getUseSSL(), options.getDisableCertificateCheck(), options.getEvent(), options.getRetryCount(), options.areDefaultHeaderDisabled());
 	}
 	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck, HTTPResultEvent event) throws IOException {
-		return request(server, port, page, requestMethod, headerFields, postData, maxSocketCount, ssl, disableCertificateCheck, event, 3);
+		return request(server, port, page, requestMethod, headerFields, postData, maxSocketCount, ssl, disableCertificateCheck, event, 3, false);
 	}
-	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck, HTTPResultEvent event, int numRetrys) throws IOException {
+	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck, HTTPResultEvent event, int numRetrys, boolean noDefaultHeader) throws IOException {
 		IOException exception = null;
 		for(int retrys = 0; retrys < numRetrys; retrys++){
 			HTTPClient client = null;
 			try{
 				boolean isConnectionCloseRequested = checkForConectionClose(headerFields);
 				if(isConnectionCloseRequested){
-					return new HTTPClient(server, port, ssl, disableCertificateCheck).request(page, requestMethod, headerFields, postData, event);
+					return new HTTPClient(server, port, ssl, disableCertificateCheck).request(page, requestMethod, headerFields, postData, event, noDefaultHeader);
 				}
 				client = getOrCreateConnection(server, port, ssl, disableCertificateCheck, maxSocketCount);
-				return client.request(page, requestMethod, headerFields, postData, event);
+				return client.request(page, requestMethod, headerFields, postData, event, noDefaultHeader);
 			}catch(IOException e){
 				if(client != null) client.close();
 				if(exception == null) exception = e;

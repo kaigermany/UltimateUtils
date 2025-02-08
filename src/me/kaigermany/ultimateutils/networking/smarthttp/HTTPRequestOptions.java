@@ -15,6 +15,7 @@ public class HTTPRequestOptions {
 	private boolean disableCertificateCheck;
 	private HTTPResultEvent event;
 	private int numRetrys = 3;
+	private boolean disableDefaultHeaders = false;
 	
 	public HTTPRequestOptions(String url){
 		String[] urlElements = parseUrl(url);
@@ -129,6 +130,15 @@ public class HTTPRequestOptions {
 
 	public int getRetryCount() {
 		return numRetrys;
+	}
+
+	public HTTPRequestOptions diableDefaultHeaders(boolean newDefaultHeaderState) {
+		disableDefaultHeaders = newDefaultHeaderState;
+		return this;
+	}
+
+	public boolean areDefaultHeaderDisabled() {
+		return disableDefaultHeaders;
 	}
 	
 	public HTTPRequestOptions dublicate(){
