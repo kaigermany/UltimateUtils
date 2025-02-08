@@ -1,6 +1,5 @@
 package me.kaigermany.ultimateutils.networking.smarthttp;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -8,7 +7,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -39,7 +37,6 @@ public class HTTPClient {
 	private long maxAge;
 	
 	public HTTPClient(String server, int port, boolean ssl, boolean disableCertificateCheck) throws UnknownHostException, IOException {
-		//System.out.println(server + " | " + port + " | " + ssl + " | " + disableCertificateCheck);
 		socket = SocketFactory.openConnection(server, port, ssl, disableCertificateCheck);
 		host = server;
 		is = socket.getInputStream();
@@ -50,10 +47,6 @@ public class HTTPClient {
 
 	public HTTPResult request(String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, HTTPResultEvent event) throws IOException {
 		resetAge();
-		//System.out.println(page + " | " + requestMethod + " | " + headerFields + " | " + (postData == null ? "null" : String.valueOf(postData.length)) + " | " + (event == null));
-		/*synchronized (this) {
-			isInUse = true;
-		}*/
 		if(page == null || page.length() == 0 || page.charAt(0) != '/') page = "/" + (page == null ? "" : page);
 		if(requestMethod == null) requestMethod = "GET";
 		if(headerFields == null) headerFields = new HashMap<String, String>();
@@ -72,7 +65,6 @@ public class HTTPClient {
 		for(Entry<String, String> e : headerFields.entrySet()){
 			sb.append(e.getKey()).append(": ").append(e.getValue()).append("\r\n");
 		}
-		//System.out.println("'"+sb.append("\r\n").toString()+"'");
 		os.write(sb.append("\r\n").toString().getBytes());
 		if(postData != null){
 			os.write(postData);
@@ -87,14 +79,11 @@ public class HTTPClient {
 			String line = readLine(is);
 			String[] tmp = line.split(" ");
 			if(tmp.length < 2){
-				System.err.println("line="+line);
-				System.err.println("tmp="+Arrays.toString(tmp));
-				System.err.println("nextline="+readLine(is));
-				
+				String loggingMsg = "[line='"+line+"',tmp="+Arrays.toString(tmp)+",nextline='"+readLine(is)+"']";
 				disabled = true;
 				isInUse = false;
 				//return new HTTPResult(null, null, 0);
-				throw new SocketException("Invalid socket state: no HTTP header was received!");
+				throw new SocketException("Invalid socket state: no HTTP header was received! " + loggingMsg);
 			}
 			responseCode = Integer.parseInt(tmp[1]);
 			//if(!line.endsWith("200 OK")) return null;
@@ -103,8 +92,6 @@ public class HTTPClient {
 				if(p == -1) break;
 				String k = line.substring(0, p);
 				String v = line.substring(p+1).trim();
-				//System.out.println("k=" + k);
-				//System.out.println("v=" + v);
 				String kk = k.toLowerCase();
 				if(kk.equals("content-length")) len = v;
 				if(kk.equals("transfer-encoding") && v.equals("chunked")) isChunkedEncoding = true;
@@ -176,14 +163,10 @@ public class HTTPClient {
 				ByteArrayOutputStream baos = new  ByteArrayOutputStream();
 				int chr = -1;
 				byte[] buffer = new byte[1024*32];
-				try {
-					BufferedInputStream bis = new BufferedInputStream(is, buffer.length * 4);
-					while ((chr = bis.read(buffer)) != -1) {
-						baos.write(buffer, 0, chr);
-						//if(chr < buffer.length) break;
-					}
-				} catch(Exception e) {
-				  if(!(e instanceof SocketTimeoutException)) e.printStackTrace();
+				//BufferedInputStream bis = new BufferedInputStream(is, buffer.length * 4);
+				while ((chr = is.read(buffer)) != -1) {
+					baos.write(buffer, 0, chr);
+					//if(chr < buffer.length) break;
 				}
 				returningResult = new HTTPResult(baos.toByteArray(), resultHeader, responseCode);
 			}
