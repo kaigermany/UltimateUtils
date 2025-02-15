@@ -14,11 +14,7 @@ public class SmartHTTP {
 	private static HashMap<String, LinkedList<HTTPClient>> clientInstancesActive = new HashMap<String, LinkedList<HTTPClient>>();
 	private static HashMap<String, LinkedList<HTTPClient>> clientInstancesIdle = new HashMap<String, LinkedList<HTTPClient>>();
 	private static HashMap<HTTPClient, String> instanceTable = new HashMap<HTTPClient, String>();
-	/*
-	private static class HTTPClientCount {
-		int value;
-	}
-	*/
+	
 	public static HTTPResult request(String url, String requestMethod, HashMap<String, String> headerFields, byte[] postData) throws IOException {
 		String[] urlElements = parseUrl(url);
 		int port;
@@ -119,7 +115,7 @@ public class SmartHTTP {
 				System.out.println("retry#" + (retrys + 1));
 			}
 		}
-		if(exception == null) exception = new IOException("unknown error: all retrys failt");
+		if(exception == null) exception = new IOException("unknown error: all retrys failed");
 		throw exception;
 	}
 	
@@ -134,24 +130,20 @@ public class SmartHTTP {
 				LinkedList<HTTPClient> idle = clientInstancesIdle.computeIfAbsent(searchKey, k->new LinkedList<HTTPClient>());
 				if(active.size() < maxSocketCount){
 					if(idle.size() == 0) {
-						
-							HTTPClient clientInstance = new HTTPClient(server, port, ssl, disableCertificateCheck);//TODO potential to freeze other threads here!
-							active.add(clientInstance);
-							instanceTable.put(clientInstance, searchKey);
-							tryStartWatchDog();
-							return clientInstance;
-						//}
+						HTTPClient clientInstance = new HTTPClient(server, port, ssl, disableCertificateCheck);//TODO potential to freeze other threads here!
+						active.add(clientInstance);
+						instanceTable.put(clientInstance, searchKey);
+						tryStartWatchDog();
+						return clientInstance;
 					} else {
-						//if(active.size() < maxSocketCount){
-							HTTPClient clientInstance = idle.remove();
-							if(!clientInstance.tryClaim()){
-								System.err.println("WARNING: Invalid HTTPClient instance found!");
-								instanceTable.remove(clientInstance);
-							} else {
-								active.add(clientInstance);
-								return clientInstance;
-							}
-						//}
+						HTTPClient clientInstance = idle.remove();
+						if(!clientInstance.tryClaim()){
+							System.err.println("WARNING: Invalid HTTPClient instance found!");
+							instanceTable.remove(clientInstance);
+						} else {
+							active.add(clientInstance);
+							return clientInstance;
+						}
 					}
 				}
 					
