@@ -49,7 +49,7 @@ IO, MATH, FastHex, TIME, SYSOUT, IMAGE
 	default ArrayList<String> splitToArray(String in, String filter) {
 		int index, offset;
 		ArrayList<String> items = new ArrayList<String>();
-		if (in == null || in.length() == 0 || filter == null) {
+		if (in != null && in.length() != 0 && filter != null) {
 			offset = 0;
 			while ((index = in.indexOf(filter, offset)) != -1) {
 				items.add(in.substring(offset, index));
