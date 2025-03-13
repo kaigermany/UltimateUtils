@@ -42,7 +42,7 @@ public class HTTPServerGroup {
 		synchronized (this) {
 			HTTPClient client;
 			if(idle.isEmpty()){
-				client = new HTTPClient(server, port, disableCertificateCheck, disableCertificateCheck, this);
+				client = new HTTPClient(server, port, ssl, disableCertificateCheck, this);
 			} else {
 				client = idle.removeFirst();
 			}
