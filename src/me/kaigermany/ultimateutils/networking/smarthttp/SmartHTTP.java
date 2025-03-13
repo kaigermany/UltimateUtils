@@ -5,16 +5,20 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
 
 public class SmartHTTP {
 	private static int NUM_MAX_CONNECTIONS_PER_SERVER = 10;
 	//private static HashMap<String, ArrayList<HTTPClient>> clientInstances = new HashMap<String, ArrayList<HTTPClient>>();
 	//private static HashMap<String, HTTPClientCount> clientInstanceCounts = new HashMap<String, HTTPClientCount>();
 	private static int WATCHDOG_SLEEP_CYCLE = 60 * 1000;
+	//TODO HashMap<String, ClientManager>  ClientManager -> LinkedList<HTTPClient> Active, Idle
+	private static HashMap<String, HTTPServerGroup> clients = new HashMap<String, HTTPServerGroup>();
+	/*
 	private static HashMap<String, LinkedList<HTTPClient>> clientInstancesActive = new HashMap<String, LinkedList<HTTPClient>>();
 	private static HashMap<String, LinkedList<HTTPClient>> clientInstancesIdle = new HashMap<String, LinkedList<HTTPClient>>();
 	private static HashMap<HTTPClient, String> instanceTable = new HashMap<HTTPClient, String>();
-	
+	*/
 	public static HTTPResult request(String url, String requestMethod, HashMap<String, String> headerFields, byte[] postData) throws IOException {
 		String[] urlElements = parseUrl(url);
 		int port;
@@ -104,7 +108,7 @@ public class SmartHTTP {
 			try{
 				boolean isConnectionCloseRequested = checkForConectionClose(headerFields);
 				if(isConnectionCloseRequested){
-					return new HTTPClient(server, port, ssl, disableCertificateCheck).request(page, requestMethod, headerFields, postData, event, noDefaultHeader);
+					return new HTTPClient(server, port, ssl, disableCertificateCheck, null).request(page, requestMethod, headerFields, postData, event, noDefaultHeader);
 				}
 				client = getOrCreateConnection(server, port, ssl, disableCertificateCheck, maxSocketCount);
 				return client.request(page, requestMethod, headerFields, postData, event, noDefaultHeader);
@@ -125,6 +129,7 @@ public class SmartHTTP {
 		String searchKey = server + "&" + port + "&" + ssl + "&" + disableCertificateCheck;
 		
 		while(true){
+			/*
 			synchronized (clientInstancesActive) {
 				LinkedList<HTTPClient> active = clientInstancesActive.computeIfAbsent(searchKey, k->new LinkedList<HTTPClient>());
 				LinkedList<HTTPClient> idle = clientInstancesIdle.computeIfAbsent(searchKey, k->new LinkedList<HTTPClient>());
@@ -148,11 +153,22 @@ public class SmartHTTP {
 				}
 					
 			}
+			*/
+			synchronized (clients) {
+				HTTPServerGroup group = clients.computeIfAbsent(searchKey, k->new HTTPServerGroup());
+				if(group.getNumActiveConnections() < maxSocketCount){
+					HTTPClient clientInstance = group.getOrCreateClient(server, port, ssl, disableCertificateCheck);
+					if(clientInstance != null){
+						tryStartWatchDog();
+						return clientInstance;
+					}
+				}
+			}
 			
 			sleep(50);
 		}
 	}
-	
+	/*
 	public static void markInstanceAsUnused(HTTPClient client){
 		synchronized (clientInstancesActive) {
 			String searchKey = instanceTable.get(client);
@@ -162,7 +178,7 @@ public class SmartHTTP {
 			idle.add(client);
 		}
 	}
-	
+	*/
 	private static void sleep(int ms){
 		try {
 			Thread.sleep(ms);
@@ -182,9 +198,12 @@ public class SmartHTTP {
 	}
 	
 	
-	private static SmartHTTP instance;
+	private static volatile SmartHTTP instance;
+	
 	private static void tryStartWatchDog() {
-		if(instance == null) instance = new SmartHTTP();
+		synchronized (clients) {
+			if(instance == null) instance = new SmartHTTP();
+		}
 	}
 	
 	private SmartHTTP(){
@@ -196,10 +215,11 @@ public class SmartHTTP {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-					boolean onExit = false;
+					//boolean onExit = false;
 					long currentTime = System.currentTimeMillis();
 					
-					synchronized (clientInstancesActive) {
+					//synchronized (clientInstancesActive) {
+						/*
 						LinkedList<HTTPClient> todoDelete = new LinkedList<HTTPClient>();
 						for(LinkedList<HTTPClient> clients : clientInstancesIdle.values()){
 							for(HTTPClient c : clients){
@@ -213,11 +233,29 @@ public class SmartHTTP {
 								clients.clear();
 							}
 						}
+						*/
+					synchronized (clients) {
+						LinkedList<String> todoDelete = new LinkedList<String>();
+						for(Entry<String, HTTPServerGroup> group : clients.entrySet()){
+							if(group.getValue().cleanup(currentTime)){
+								todoDelete.add(group.getKey());
+							}
+						}
+						if(todoDelete.size() > 0){
+							for(String k : todoDelete){
+								clients.remove(k);
+							}
+						}
+						
+						if(clients.isEmpty()){
+							instance = null;
+							return;
+						}
 					}
-					if(onExit) break;
+					//if(onExit) break;
 				}
 			}
-		});
+		}, "SmartHTTP Watchdog");
 		t.setDaemon(true);
 		t.start();
 	}

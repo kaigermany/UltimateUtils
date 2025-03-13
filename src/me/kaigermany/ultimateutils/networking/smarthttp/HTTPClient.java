@@ -36,7 +36,10 @@ public class HTTPClient {
 
 	private long maxAge;
 	
-	public HTTPClient(String server, int port, boolean ssl, boolean disableCertificateCheck) throws UnknownHostException, IOException {
+	private final HTTPServerGroup parent;
+	
+	public HTTPClient(String server, int port, boolean ssl, boolean disableCertificateCheck, HTTPServerGroup parent) throws UnknownHostException, IOException {
+		this.parent = parent;
 		socket = SocketFactory.openConnection(server, port, ssl, disableCertificateCheck);
 		host = server;
 		is = socket.getInputStream();
@@ -214,7 +217,7 @@ public class HTTPClient {
 			isInUse = false;
 		}
 		
-		SmartHTTP.markInstanceAsUnused(this);
+		if(parent != null) parent.markInstanceAsUnused(this);
 		
 		return returningResult;
 	}
