@@ -56,12 +56,6 @@ public class HTTPServerGroup {
 		synchronized (this) {
 			while(!idle.isEmpty()){
 				HTTPClient client = idle.removeFirst();
-				/*
-				if(!client.tryClaim()){//Theoretically impossible...
-					System.err.println("WARNING: Invalid HTTPClient instance found!");
-					return null;
-				}
-				*/
 				if(client.tryClaim()){
 					active.add(client);
 					return client;
@@ -77,5 +71,12 @@ public class HTTPServerGroup {
 	@Override
 	public String toString() {
 		return "{#active: " + active.size() + ", #idle = " + idle.size() + "}";
+	}
+
+	public void markInstanceAsDeleted(HTTPClient client) {
+		synchronized (this) {
+			active.remove(client);
+			idle.remove(client);
+		}
 	}
 }

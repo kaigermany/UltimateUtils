@@ -233,6 +233,7 @@ public class HTTPClient {
 		try{
 			socket.close();
 		}catch(Exception e){}
+		if(parent != null) parent.markInstanceAsDeleted(this);
 	}
 	
 	private void resetAge(){
