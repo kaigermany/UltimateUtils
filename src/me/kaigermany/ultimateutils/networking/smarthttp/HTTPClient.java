@@ -49,177 +49,179 @@ public class HTTPClient {
 	}
 
 	public HTTPResult request(String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, HTTPResultEvent event, boolean noDefaultHeader) throws IOException {
-		resetAge();
-		if(page == null || page.length() == 0 || page.charAt(0) != '/') page = "/" + (page == null ? "" : page);
-		if(requestMethod == null) requestMethod = "GET";
-		if(headerFields == null) headerFields = new HashMap<String, String>();
-		if(!noDefaultHeader){
-			for(Entry<String, String> e : DEFAULT_HEADER.entrySet()){
-				if(headerFields.containsKey(e.getKey())) continue;
-				headerFields.put(e.getKey(), e.getValue());
-			}
-		}
-		headerFields.putIfAbsent("Host", host);
-		
-		if(postData != null){
-			headerFields.put("Content-Length", String.valueOf(postData.length));
-		}
-		
-		StringBuilder sb = new StringBuilder(requestMethod).append(' ').append(page).append(" HTTP/1.1\r\n");
-		for(Entry<String, String> e : headerFields.entrySet()){
-			sb.append(e.getKey()).append(": ").append(e.getValue()).append("\r\n");
-		}
-		os.write(sb.append("\r\n").toString().getBytes());
-		if(postData != null){
-			os.write(postData);
-		}
-		os.flush();
-		
-		String len = null;
-		int responseCode;
-		HashMap<String, String> resultHeader = new HashMap<String, String>();
-		boolean isChunkedEncoding = false;
-		{
-			String line = readLine(is);
-			String[] tmp = line.split(" ");
-			if(tmp.length < 2){
-				String loggingMsg = "[line='"+line+"',tmp="+Arrays.toString(tmp)+",nextline='"+readLine(is)+"']";
-				disabled = true;
-				isInUse = false;
-				//return new HTTPResult(null, null, 0);
-				throw new SocketException("Invalid socket state: no HTTP header was received! " + loggingMsg);
-			}
-			responseCode = Integer.parseInt(tmp[1]);
-			//if(!line.endsWith("200 OK")) return null;
-			while((line = readLine(is)).length() > 2){
-				int p = line.indexOf(':');
-				if(p == -1) break;
-				String k = line.substring(0, p);
-				String v = line.substring(p+1).trim();
-				String kk = k.toLowerCase();
-				if(kk.equals("content-length")) len = v;
-				if(kk.equals("transfer-encoding") && v.equals("chunked")) isChunkedEncoding = true;
-				if(resultHeader.containsKey(k)){
-					int n = 0;
-					String k2;
-					do {
-						n++;
-						k2 = k + "_" + n;
-					}while(resultHeader.containsKey(k2));
-					resultHeader.put(k2, v);
-				} else {
-					resultHeader.put(k, v);
+		try {
+			resetAge();
+			if(page == null || page.length() == 0 || page.charAt(0) != '/') page = "/" + (page == null ? "" : page);
+			if(requestMethod == null) requestMethod = "GET";
+			if(headerFields == null) headerFields = new HashMap<String, String>();
+			if(!noDefaultHeader){
+				for(Entry<String, String> e : DEFAULT_HEADER.entrySet()){
+					if(headerFields.containsKey(e.getKey())) continue;
+					headerFields.put(e.getKey(), e.getValue());
 				}
 			}
-		}
-		
-		HTTPResult returningResult;
-		
-		if(isChunkedEncoding){
+			headerFields.putIfAbsent("Host", host);
 			
-			if(event != null){
-				returningResult = new HTTPResult(null, resultHeader, responseCode);
-				WrappedInputStream wis = new WrappedInputStream() {
-					//int chunkSize = 1;
-					int capacityLeft = Integer.parseInt(readLine(is).trim(), 16);
-					@Override
-					public int read(byte[] buf, int off, int len) throws IOException {
-						if(capacityLeft == -1) return -1;
-						if(capacityLeft == 0){
-							readLine(is);
-							capacityLeft = Integer.parseInt(readLine(is).trim(), 16);
+			if(postData != null){
+				headerFields.put("Content-Length", String.valueOf(postData.length));
+			}
+			
+			StringBuilder sb = new StringBuilder(requestMethod).append(' ').append(page).append(" HTTP/1.1\r\n");
+			for(Entry<String, String> e : headerFields.entrySet()){
+				sb.append(e.getKey()).append(": ").append(e.getValue()).append("\r\n");
+			}
+			os.write(sb.append("\r\n").toString().getBytes());
+			if(postData != null){
+				os.write(postData);
+			}
+			os.flush();
+			
+			String len = null;
+			int responseCode;
+			HashMap<String, String> resultHeader = new HashMap<String, String>();
+			boolean isChunkedEncoding = false;
+			{
+				String line = readLine(is);
+				String[] tmp = line.split(" ");
+				if(tmp.length < 2){
+					String loggingMsg = "[line='"+line+"',tmp="+Arrays.toString(tmp)+",nextline='"+readLine(is)+"']";
+					disabled = true;
+					isInUse = false;
+					//return new HTTPResult(null, null, 0);
+					throw new SocketException("Invalid socket state: no HTTP header was received! " + loggingMsg);
+				}
+				responseCode = Integer.parseInt(tmp[1]);
+				//if(!line.endsWith("200 OK")) return null;
+				while((line = readLine(is)).length() > 2){
+					int p = line.indexOf(':');
+					if(p == -1) break;
+					String k = line.substring(0, p);
+					String v = line.substring(p+1).trim();
+					String kk = k.toLowerCase();
+					if(kk.equals("content-length")) len = v;
+					if(kk.equals("transfer-encoding") && v.equals("chunked")) isChunkedEncoding = true;
+					if(resultHeader.containsKey(k)){
+						int n = 0;
+						String k2;
+						do {
+							n++;
+							k2 = k + "_" + n;
+						}while(resultHeader.containsKey(k2));
+						resultHeader.put(k2, v);
+					} else {
+						resultHeader.put(k, v);
+					}
+				}
+			}
+			
+			HTTPResult returningResult;
+			
+			if(isChunkedEncoding){
+				
+				if(event != null){
+					returningResult = new HTTPResult(null, resultHeader, responseCode);
+					WrappedInputStream wis = new WrappedInputStream() {
+						//int chunkSize = 1;
+						int capacityLeft = Integer.parseInt(readLine(is).trim(), 16);
+						@Override
+						public int read(byte[] buf, int off, int len) throws IOException {
+							if(capacityLeft == -1) return -1;
 							if(capacityLeft == 0){
-								capacityLeft = -1;
-								readLine(is);//must be done as very last action says specifications on Wikipedia. https://en.wikipedia.org/wiki/Chunked_transfer_encoding#Example
-								return -1;
+								readLine(is);
+								capacityLeft = Integer.parseInt(readLine(is).trim(), 16);
+								if(capacityLeft == 0){
+									capacityLeft = -1;
+									readLine(is);//must be done as very last action says specifications on Wikipedia. https://en.wikipedia.org/wiki/Chunked_transfer_encoding#Example
+									return -1;
+								}
 							}
-						}
-						int l = is.read(buf, off, Math.min(len, capacityLeft));
-						if(l == -1) {
-							capacityLeft = -1;
-						} else {
-							capacityLeft -= l;
-						}
-						return l;
-					}
-				};
-
-				event.onReceived(returningResult, wis);
-				wis.readToEnd(DUMMY_BUFFER);
-			} else {
-				ByteArrayOutputStream baos = new  ByteArrayOutputStream();
-				byte[] buf = new byte[4096];
-				int chunkSize = 1;
-				while(chunkSize != 0){
-					chunkSize = Integer.parseInt(readLine(is).trim(), 16);
-					copyBytes(is, baos, buf, chunkSize);
-					readLine(is);//must be done here say specifications on wikipedia. https://en.wikipedia.org/wiki/Chunked_transfer_encoding#Example
-				}
-				returningResult = new HTTPResult(baos.toByteArray(), resultHeader, responseCode);
-			}
-			
-		} else if(len == null){
-			
-			if(event != null){
-				returningResult = new HTTPResult(null, resultHeader, responseCode);
-				event.onReceived(returningResult, is);
-			} else {
-				ByteArrayOutputStream baos = new  ByteArrayOutputStream();
-				int chr = -1;
-				byte[] buffer = new byte[1024*32];
-				//BufferedInputStream bis = new BufferedInputStream(is, buffer.length * 4);
-				while ((chr = is.read(buffer)) != -1) {
-					baos.write(buffer, 0, chr);
-					//if(chr < buffer.length) break;
-				}
-				returningResult = new HTTPResult(baos.toByteArray(), resultHeader, responseCode);
-			}
-			disabled = true;
-			
-		} else {
-			
-			if(event != null){
-				returningResult = new HTTPResult(null, resultHeader, responseCode);
-				final long lenVal = Long.parseLong(len);
-				WrappedInputStream wis = new WrappedInputStream() {
-					//int chunkSize = 1;
-					long capacityLeft = lenVal;
-					@Override
-					public int read(byte[] buf, int off, int len) throws IOException {
-						if(capacityLeft == -1) return -1;
-						if(capacityLeft < len) {
-							len = (int)capacityLeft;
-							if(len == 0){
+							int l = is.read(buf, off, Math.min(len, capacityLeft));
+							if(l == -1) {
 								capacityLeft = -1;
-								return -1;
+							} else {
+								capacityLeft -= l;
 							}
+							return l;
 						}
-						int l = is.read(buf, off, len);
-						if(l == -1) {
-							capacityLeft = -1;
-						} else {
-							capacityLeft -= l;
-						}
-						return l;
+					};
+	
+					event.onReceived(returningResult, wis);
+					wis.readToEnd(DUMMY_BUFFER);
+				} else {
+					ByteArrayOutputStream baos = new  ByteArrayOutputStream();
+					byte[] buf = new byte[4096];
+					int chunkSize = 1;
+					while(chunkSize != 0){
+						chunkSize = Integer.parseInt(readLine(is).trim(), 16);
+						copyBytes(is, baos, buf, chunkSize);
+						readLine(is);//must be done here say specifications on wikipedia. https://en.wikipedia.org/wiki/Chunked_transfer_encoding#Example
 					}
-				};
-				event.onReceived(returningResult, wis);
-				wis.readToEnd(DUMMY_BUFFER);
+					returningResult = new HTTPResult(baos.toByteArray(), resultHeader, responseCode);
+				}
+				
+			} else if(len == null){
+				
+				if(event != null){
+					returningResult = new HTTPResult(null, resultHeader, responseCode);
+					event.onReceived(returningResult, is);
+				} else {
+					ByteArrayOutputStream baos = new  ByteArrayOutputStream();
+					int chr = -1;
+					byte[] buffer = new byte[1024*32];
+					//BufferedInputStream bis = new BufferedInputStream(is, buffer.length * 4);
+					while ((chr = is.read(buffer)) != -1) {
+						baos.write(buffer, 0, chr);
+						//if(chr < buffer.length) break;
+					}
+					returningResult = new HTTPResult(baos.toByteArray(), resultHeader, responseCode);
+				}
+				disabled = true;
+				
 			} else {
-				byte[] arr = new byte[Integer.parseInt(len)];
-				new DataInputStream(is).readFully(arr);
-				returningResult = new HTTPResult(arr, resultHeader, responseCode);
+				
+				if(event != null){
+					returningResult = new HTTPResult(null, resultHeader, responseCode);
+					final long lenVal = Long.parseLong(len);
+					WrappedInputStream wis = new WrappedInputStream() {
+						//int chunkSize = 1;
+						long capacityLeft = lenVal;
+						@Override
+						public int read(byte[] buf, int off, int len) throws IOException {
+							if(capacityLeft == -1) return -1;
+							if(capacityLeft < len) {
+								len = (int)capacityLeft;
+								if(len == 0){
+									capacityLeft = -1;
+									return -1;
+								}
+							}
+							int l = is.read(buf, off, len);
+							if(l == -1) {
+								capacityLeft = -1;
+							} else {
+								capacityLeft -= l;
+							}
+							return l;
+						}
+					};
+					event.onReceived(returningResult, wis);
+					wis.readToEnd(DUMMY_BUFFER);
+				} else {
+					byte[] arr = new byte[Integer.parseInt(len)];
+					new DataInputStream(is).readFully(arr);
+					returningResult = new HTTPResult(arr, resultHeader, responseCode);
+				}
+				
 			}
 			
+			synchronized (this) {
+				isInUse = false;
+			}
+			
+			return returningResult;
+		} finally {//ensure instance will not end in a Zombie state
+			if(parent != null) parent.markInstanceAsUnused(this);
 		}
-		
-		synchronized (this) {
-			isInUse = false;
-		}
-		
-		if(parent != null) parent.markInstanceAsUnused(this);
-		
-		return returningResult;
 	}
 
 	public boolean canBeDeleted(long currentTime) {
