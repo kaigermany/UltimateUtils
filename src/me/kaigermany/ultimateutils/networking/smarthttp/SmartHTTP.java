@@ -109,8 +109,8 @@ public class SmartHTTP {
 			}catch(IOException e){
 				if(client != null) client.close();
 				if(exception == null) exception = e;
-				e.printStackTrace();
-				System.out.println("retry#" + (retrys + 1));
+				//e.printStackTrace();
+				//System.out.println("retry#" + (retrys + 1));
 			}
 		}
 		if(exception == null) exception = new IOException("unknown error: all retrys failed");
