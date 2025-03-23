@@ -143,6 +143,12 @@ public class HTTPClient {
 							}
 							return l;
 						}
+
+						@Override
+						public void close() throws IOException {
+							disabled = true;
+							socket.close();
+						}
 					};
 	
 					event.onReceived(returningResult, wis);
@@ -203,9 +209,15 @@ public class HTTPClient {
 							}
 							return l;
 						}
+						
+						@Override
+						public void close() throws IOException {
+							disabled = true;
+							socket.close();
+						}
 					};
 					event.onReceived(returningResult, wis);
-					wis.readToEnd(DUMMY_BUFFER);
+					if(!disabled) wis.readToEnd(DUMMY_BUFFER);
 				} else {
 					byte[] arr = new byte[Integer.parseInt(len)];
 					new DataInputStream(is).readFully(arr);
