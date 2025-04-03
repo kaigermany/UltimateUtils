@@ -72,7 +72,11 @@ public class StaticUtils {
 			for (int i = 0; i < 16; i++) {
 				int a = offset + i;
 				if (a < in.length)
-					System.out.print((char) in[a]);
+					if(in[a] >= 32 && in[a] < 126) {
+						System.out.print((char) in[a]);
+					} else {
+						System.out.print('.');
+					}
 				else
 					System.out.print(" ");
 			}
