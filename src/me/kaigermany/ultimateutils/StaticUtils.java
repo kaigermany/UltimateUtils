@@ -322,4 +322,14 @@ public class StaticUtils {
         	return "";
         }
 	}
+	
+	public static void deleteDirectory(File dir){
+		for(File f : dir.listFiles()){
+			if(f.isDirectory()){
+				deleteDirectory(f);
+			} else {
+				f.delete();
+			}
+		}
+	}
 }
