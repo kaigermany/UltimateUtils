@@ -25,6 +25,8 @@ public class DnsUtils {
 	}
 //TODO test that updates are compatible
 	public static void unsafeSetField(Class<?> targetClass, Field targtFieldInClass, Object objectToSet) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+		//TODO automatically switch between static an instantiated calls.
+		//boolean isStatic = (targtFieldInClass.getModifiers() & Modifier.STATIC) != 0;
 		Object long_offset = unsafeClass.getDeclaredMethod("staticFieldOffset", Field.class).invoke(unsafe, targtFieldInClass);
 		unsafeClass.getDeclaredMethod("putObject", Object.class, long.class, Object.class).invoke(unsafe, targetClass, long_offset, objectToSet);
 	}
