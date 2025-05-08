@@ -1,6 +1,8 @@
 package me.kaigermany.ultimateutils.networking.util;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
@@ -15,6 +17,7 @@ import javax.net.ssl.X509TrustManager;
 public class SocketFactory {
 	private static final javax.net.SocketFactory secureSSLFactory = SSLSocketFactory.getDefault();
 	private static final javax.net.SocketFactory insecureSSLFactory = getSocketFactory();
+	private static Proxy proxy;
 	
 	/**
 	 * Creates a new Socket. <br />
@@ -31,11 +34,34 @@ public class SocketFactory {
 	 * @throws UnknownHostException
 	 * @throws IOException
 	 */
-	public static Socket openConnection(String ip, int port, boolean ssl, boolean disableCertificateCheck) throws UnknownHostException, IOException {
-		if(ssl){
-			return (disableCertificateCheck ? insecureSSLFactory : secureSSLFactory).createSocket(ip, port);
+	public static Socket openConnection(String ip, int port, boolean ssl, boolean disableCertificateCheck)
+		throws UnknownHostException, IOException {
+		Socket socket;
+
+		if (proxy != null) {
+			if (ssl) {
+				socket = new Socket(proxy);
+				socket.connect(new InetSocketAddress(ip, port));
+
+				javax.net.SocketFactory factory = disableCertificateCheck ? insecureSSLFactory : secureSSLFactory;
+
+				if (factory instanceof javax.net.ssl.SSLSocketFactory) {
+					return ((javax.net.ssl.SSLSocketFactory) factory).createSocket(
+						socket, ip, port, true /* autoClose */);
+				} else {
+					throw new IOException("SSL über SOCKS-Proxy benötigt eine SSLSocketFactory");
+				}
+			} else {
+				socket = new Socket(proxy);
+				socket.connect(new InetSocketAddress(ip, port));
+				return socket;
+			}
 		} else {
-			return new Socket(ip, port);
+			if (ssl) {
+				return (disableCertificateCheck ? insecureSSLFactory : secureSSLFactory).createSocket(ip, port);
+			} else {
+				return new Socket(ip, port);
+			}
 		}
 	}
 
@@ -62,5 +88,9 @@ public class SocketFactory {
 	    	ex.printStackTrace();
 	    	return null;
 	    }
+	}
+
+	public static void setProxy(Proxy proxy) {
+		SocketFactory.proxy = proxy;
 	}
 }
