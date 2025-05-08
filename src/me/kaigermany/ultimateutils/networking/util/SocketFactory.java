@@ -18,7 +18,7 @@ public class SocketFactory {
 	private static final javax.net.SocketFactory secureSSLFactory = SSLSocketFactory.getDefault();
 	private static final javax.net.SocketFactory insecureSSLFactory = getSocketFactory();
 	private static Proxy proxy;
-	
+
 	/**
 	 * Creates a new Socket. <br />
 	 * if ssl then an new SSLSocket will be opened. <br />
