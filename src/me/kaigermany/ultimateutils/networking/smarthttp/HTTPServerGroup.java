@@ -1,6 +1,7 @@
 package me.kaigermany.ultimateutils.networking.smarthttp;
 
 import java.io.IOException;
+import java.net.Proxy;
 import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -52,7 +53,7 @@ public class HTTPServerGroup {
 		}
 	}
 
-	public HTTPClient getOrCreateClient(String server, int port, boolean ssl, boolean disableCertificateCheck) throws UnknownHostException, IOException {
+	public HTTPClient getOrCreateClient(String server, int port, boolean ssl, boolean disableCertificateCheck, Proxy proxy) throws UnknownHostException, IOException {
 		synchronized (this) {
 			while(!idle.isEmpty()){
 				HTTPClient client = idle.removeFirst();
@@ -62,7 +63,7 @@ public class HTTPServerGroup {
 				}
 			}
 			//if there is no instance for reuse left then open a new one.
-			HTTPClient client = new HTTPClient(server, port, ssl, disableCertificateCheck, this);
+			HTTPClient client = new HTTPClient(server, port, ssl, disableCertificateCheck, this, proxy);
 			active.add(client);
 			return client;
 		}

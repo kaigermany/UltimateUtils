@@ -15,12 +15,12 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 public class SocketFactory {
-	private static final javax.net.SocketFactory secureSSLFactory = SSLSocketFactory.getDefault();
-	private static final javax.net.SocketFactory insecureSSLFactory = getSocketFactory();
-	private static Proxy proxy;
+	private static final SSLSocketFactory secureSSLFactory = (SSLSocketFactory)SSLSocketFactory.getDefault();
+	private static final SSLSocketFactory insecureSSLFactory = getSocketFactory();
+	
 	/**
 	 * Creates a new Socket. <br />
-	 * if ssl then an new SSLSocket will be opened. <br />
+	 * if ssl then a new SSLSocket will be opened. <br />
 	 * if ssl && disableCertificateCheck then an new SSLSocket will be opened
 	 * but the certificate will not be checked. This can become handy if you are
 	 * working with self-signed or out-dated certificates.
@@ -34,22 +34,35 @@ public class SocketFactory {
 	 * @throws IOException
 	 */
 	public static Socket openConnection(String ip, int port, boolean ssl, boolean disableCertificateCheck) throws UnknownHostException, IOException {
-		Socket socket;
+		return openConnection(ip, port, ssl, disableCertificateCheck, null);
+	}
+	/**
+	 * Creates a new Socket. <br />
+	 * if ssl then a new SSLSocket will be opened. <br />
+	 * if ssl && disableCertificateCheck then an new SSLSocket will be opened
+	 * but the certificate will not be checked. This can become handy if you are
+	 * working with self-signed or out-dated certificates.
+	 * 
+	 * additionally, a custom proxy target can be set.
+	 * 
+	 * @param ip IPv4, PIv6 or DNS address to connect to
+	 * @param port the target port to open
+	 * @param ssl use an SSLSocket or else a plain (raw) Socket
+	 * @param disableCertificateCheck ignores invalid or unknown certificates. works only if boolean ssl is also true.
+	 * @param proxy proxy info
+	 * @return a new Socket ready to communicate.
+	 * @throws UnknownHostException
+	 * @throws IOException
+	 */
+	public static Socket openConnection(String ip, int port, boolean ssl, boolean disableCertificateCheck, Proxy proxy) throws UnknownHostException, IOException {
 		if (proxy != null) {
 			if (ssl) {
-				socket = new Socket(proxy);
+				Socket socket = new Socket(proxy);
 				socket.connect(new InetSocketAddress(ip, port));
-
-				javax.net.SocketFactory factory = disableCertificateCheck ? insecureSSLFactory : secureSSLFactory;
-
-				if (factory instanceof javax.net.ssl.SSLSocketFactory) {
-					return ((javax.net.ssl.SSLSocketFactory) factory).createSocket(
-						socket, ip, port, true /* autoClose */);
-				} else {
-					throw new IOException("SSL über SOCKS-Proxy benötigt eine SSLSocketFactory");
-				}
+				SSLSocketFactory factory = disableCertificateCheck ? insecureSSLFactory : secureSSLFactory;
+				return factory.createSocket(socket, ip, port, true /* autoClose */);
 			} else {
-				socket = new Socket(proxy);
+				Socket socket = new Socket(proxy);
 				socket.connect(new InetSocketAddress(ip, port));
 				return socket;
 			}
@@ -85,10 +98,5 @@ public class SocketFactory {
 	    	ex.printStackTrace();
 	    	return null;
 	    }
-	}
-	
-
-	public static void setProxy(Proxy proxy) {
-		SocketFactory.proxy = proxy;
 	}
 }

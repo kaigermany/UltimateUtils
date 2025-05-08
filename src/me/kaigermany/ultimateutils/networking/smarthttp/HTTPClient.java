@@ -5,6 +5,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Proxy;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -38,9 +39,9 @@ public class HTTPClient {
 	
 	private final HTTPServerGroup parent;
 	
-	public HTTPClient(String server, int port, boolean ssl, boolean disableCertificateCheck, HTTPServerGroup parent) throws UnknownHostException, IOException {
+	public HTTPClient(String server, int port, boolean ssl, boolean disableCertificateCheck, HTTPServerGroup parent, Proxy proxy) throws UnknownHostException, IOException {
 		this.parent = parent;
-		socket = SocketFactory.openConnection(server, port, ssl, disableCertificateCheck);
+		socket = SocketFactory.openConnection(server, port, ssl, disableCertificateCheck, proxy);
 		host = server;
 		is = socket.getInputStream();
 		os = socket.getOutputStream();
