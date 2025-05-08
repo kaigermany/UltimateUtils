@@ -101,7 +101,7 @@ public class SmartHTTP {
 		return request(options.getServer(), options.getPort(), options.getPage(), options.getRequestMethod(),
 				options.getHeaderFields(), options.getPostData(), options.getMaxSocketCount(),
 				options.getUseSSL(), options.getDisableCertificateCheck(), options.getEvent(),
-				options.getRetryCount(), options.areDefaultHeaderDisabled(), null);
+				options.getRetryCount(), options.areDefaultHeaderDisabled(), options.getProxy());
 	}
 	@Deprecated
 	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck, HTTPResultEvent event) throws IOException {

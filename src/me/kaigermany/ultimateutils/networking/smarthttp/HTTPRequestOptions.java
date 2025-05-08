@@ -1,5 +1,6 @@
 package me.kaigermany.ultimateutils.networking.smarthttp;
 
+import java.net.Proxy;
 import java.util.HashMap;
 
 public class HTTPRequestOptions {
@@ -16,6 +17,7 @@ public class HTTPRequestOptions {
 	private HTTPResultEvent event;
 	private int numRetrys = 3;
 	private boolean disableDefaultHeaders = false;
+	private Proxy proxy = null;
 	
 	public HTTPRequestOptions(String url){
 		String[] urlElements = parseUrl(url);
@@ -140,6 +142,15 @@ public class HTTPRequestOptions {
 	public boolean areDefaultHeaderDisabled() {
 		return disableDefaultHeaders;
 	}
+
+	public HTTPRequestOptions setProxy(Proxy proxy) {
+		this.proxy = proxy;
+		return this;
+	}
+
+	public Proxy getProxy() {
+		return proxy;
+	}
 	
 	public HTTPRequestOptions dublicate(){
 		HTTPRequestOptions copy = new HTTPRequestOptions(server, port, page);
@@ -150,6 +161,9 @@ public class HTTPRequestOptions {
 		copy.useSSL = this.useSSL;
 		copy.disableCertificateCheck = this.disableCertificateCheck;
 		copy.event = this.event;
+		copy.numRetrys = this.numRetrys;
+		copy.disableDefaultHeaders = this.disableDefaultHeaders;
+		copy.proxy = this.proxy;
 		return copy;
 	}
 	
