@@ -1,6 +1,7 @@
 package me.kaigermany.ultimateutils.networking.smarthttp;
 
 import java.io.IOException;
+import java.net.Proxy;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -12,7 +13,8 @@ public class SmartHTTP {
 	private static int WATCHDOG_SLEEP_CYCLE = 60 * 1000;
 	
 	private static HashMap<String, HTTPServerGroup> clients = new HashMap<String, HTTPServerGroup>();
-	
+
+	@Deprecated
 	public static HTTPResult request(String url, String requestMethod, HashMap<String, String> headerFields, byte[] postData) throws IOException {
 		String[] urlElements = parseUrl(url);
 		int port;
@@ -24,6 +26,7 @@ public class SmartHTTP {
 		}
 		return request(urlElements[1], port, urlElements[3], requestMethod, headerFields, postData, NUM_MAX_CONNECTIONS_PER_SERVER, ssl, false, null);
 	}
+	@Deprecated
 	public static HTTPResult request(String url, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount) throws IOException {
 		String[] urlElements = parseUrl(url);
 		int port;
@@ -35,6 +38,7 @@ public class SmartHTTP {
 		}
 		return request(urlElements[1], port, urlElements[3], requestMethod, headerFields, postData, maxSocketCount, ssl, false, null);
 	}
+	@Deprecated
 	public static HTTPResult request(String url, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl) throws IOException {
 		String[] urlElements = parseUrl(url);
 		if(urlElements[0] != null && !urlElements[0].equals("https") && ssl){
@@ -48,6 +52,7 @@ public class SmartHTTP {
 		}
 		return request(urlElements[1], port, urlElements[3], requestMethod, headerFields, postData, maxSocketCount, ssl, false, null);
 	}
+	@Deprecated
 	public static HTTPResult request(String url, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck) throws IOException {
 		String[] urlElements = parseUrl(url);
 		if(urlElements[0] != null && !urlElements[0].equals("https") && ssl){
@@ -61,18 +66,23 @@ public class SmartHTTP {
 		}
 		return request(urlElements[1], port, urlElements[3], requestMethod, headerFields, postData, maxSocketCount, ssl, disableCertificateCheck, null);
 	}
+	@Deprecated
 	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData) throws IOException {
 		return request(server, port, page, requestMethod, headerFields, postData, NUM_MAX_CONNECTIONS_PER_SERVER);
 	}
+	@Deprecated
 	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount) throws IOException {
 		return request(server, port, page, requestMethod, headerFields, postData, maxSocketCount, port == 443);
 	}
+	@Deprecated
 	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl) throws IOException {
 		return request(server, port, page, requestMethod, headerFields, postData, maxSocketCount, ssl, false);
 	}
+	@Deprecated
 	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck) throws IOException {
 		return request(server, port, page, requestMethod, headerFields, postData, maxSocketCount, ssl, disableCertificateCheck, null);
 	}
+	@Deprecated
 	public static HTTPResult request(String url, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck, HTTPResultEvent event) throws IOException {
 		String[] urlElements = parseUrl(url);
 		if(urlElements[0] != null && !urlElements[0].equals("https") && ssl){
@@ -90,21 +100,24 @@ public class SmartHTTP {
 	public static HTTPResult request(HTTPRequestOptions options) throws IOException {
 		return request(options.getServer(), options.getPort(), options.getPage(), options.getRequestMethod(),
 				options.getHeaderFields(), options.getPostData(), options.getMaxSocketCount(),
-				options.getUseSSL(), options.getDisableCertificateCheck(), options.getEvent(), options.getRetryCount(), options.areDefaultHeaderDisabled());
+				options.getUseSSL(), options.getDisableCertificateCheck(), options.getEvent(),
+				options.getRetryCount(), options.areDefaultHeaderDisabled(), null);
 	}
+	@Deprecated
 	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck, HTTPResultEvent event) throws IOException {
-		return request(server, port, page, requestMethod, headerFields, postData, maxSocketCount, ssl, disableCertificateCheck, event, 3, false);
+		return request(server, port, page, requestMethod, headerFields, postData, maxSocketCount, ssl, disableCertificateCheck, event, 3, false, null);
 	}
-	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck, HTTPResultEvent event, int numRetrys, boolean noDefaultHeader) throws IOException {
+	
+	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck, HTTPResultEvent event, int numRetrys, boolean noDefaultHeader, Proxy proxy) throws IOException {
 		IOException exception = null;
 		for(int retrys = 0; retrys < numRetrys; retrys++){
 			HTTPClient client = null;
 			try{
 				boolean isConnectionCloseRequested = checkForConectionClose(headerFields);
 				if(isConnectionCloseRequested){
-					return new HTTPClient(server, port, ssl, disableCertificateCheck, null).request(page, requestMethod, headerFields, postData, event, noDefaultHeader);
+					return new HTTPClient(server, port, ssl, disableCertificateCheck, null, proxy).request(page, requestMethod, headerFields, postData, event, noDefaultHeader);
 				}
-				client = getOrCreateConnection(server, port, ssl, disableCertificateCheck, maxSocketCount);
+				client = getOrCreateConnection(server, port, ssl, disableCertificateCheck, maxSocketCount, proxy);
 				return client.request(page, requestMethod, headerFields, postData, event, noDefaultHeader);
 			}catch(IOException e){
 				if(client != null) client.close();
@@ -117,7 +130,7 @@ public class SmartHTTP {
 		throw exception;
 	}
 	
-	private static HTTPClient getOrCreateConnection(String server, int port, boolean ssl, boolean disableCertificateCheck, int maxSocketCount) throws UnknownHostException, IOException {
+	private static HTTPClient getOrCreateConnection(String server, int port, boolean ssl, boolean disableCertificateCheck, int maxSocketCount, Proxy proxy) throws UnknownHostException, IOException {
 		if(maxSocketCount <= 0) return null;
 		
 		String searchKey = server + "&" + port + "&" + ssl + "&" + disableCertificateCheck;
@@ -126,7 +139,7 @@ public class SmartHTTP {
 			synchronized (clients) {
 				HTTPServerGroup group = clients.computeIfAbsent(searchKey, k->new HTTPServerGroup());
 				if(group.getNumActiveConnections() < maxSocketCount){
-					HTTPClient clientInstance = group.getOrCreateClient(server, port, ssl, disableCertificateCheck);
+					HTTPClient clientInstance = group.getOrCreateClient(server, port, ssl, disableCertificateCheck, proxy);
 					if(clientInstance != null){
 						tryStartWatchDog();
 						return clientInstance;
