@@ -56,14 +56,12 @@ public class SocketFactory {
 	 */
 	public static Socket openConnection(String ip, int port, boolean ssl, boolean disableCertificateCheck, Proxy proxy) throws UnknownHostException, IOException {
 		if (proxy != null) {
+			Socket socket = new Socket(proxy);
+			socket.connect(new InetSocketAddress(ip, port));
 			if (ssl) {
-				Socket socket = new Socket(proxy);
-				socket.connect(new InetSocketAddress(ip, port));
 				SSLSocketFactory factory = disableCertificateCheck ? insecureSSLFactory : secureSSLFactory;
 				return factory.createSocket(socket, ip, port, true /* autoClose */);
 			} else {
-				Socket socket = new Socket(proxy);
-				socket.connect(new InetSocketAddress(ip, port));
 				return socket;
 			}
 		} else {

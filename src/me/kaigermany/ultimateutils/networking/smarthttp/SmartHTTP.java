@@ -129,7 +129,7 @@ public class SmartHTTP {
 	private static HTTPClient getOrCreateConnection(String server, int port, boolean ssl, boolean disableCertificateCheck, int maxSocketCount, Proxy proxy) throws UnknownHostException, IOException {
 		if(maxSocketCount <= 0) return null;
 		
-		String searchKey = server + "&" + port + "&" + ssl + "&" + disableCertificateCheck;
+		String searchKey = server + "&" + port + "&" + ssl + "&" + disableCertificateCheck + "&" + proxy;
 		//long printTimeout = (30 * 1000) / 50;
 		while(true){
 			synchronized (clients) {
