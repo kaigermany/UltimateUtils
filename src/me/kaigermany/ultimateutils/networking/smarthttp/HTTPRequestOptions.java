@@ -4,6 +4,8 @@ import java.net.Proxy;
 import java.util.HashMap;
 
 public class HTTPRequestOptions {
+	private static int NUM_MAX_CONNECTIONS_PER_SERVER = 10;
+	
 	private final String server;
 	private final int port;
 	private final String page;
@@ -11,13 +13,30 @@ public class HTTPRequestOptions {
 	private String requestMethod = "GET";
 	private HashMap<String, String> headerFields;
 	private byte[] postData;
-	private int maxSocketCount = 10;
+	private int maxSocketCount = NUM_MAX_CONNECTIONS_PER_SERVER;
 	private boolean useSSL;
 	private boolean disableCertificateCheck;
 	private HTTPResultEvent event;
 	private int numRetrys = 3;
 	private boolean disableDefaultHeaders = false;
 	private Proxy proxy = null;
+	private int socketTimeoutMillis = HTTPClient.DEFAULT_SOCKET_TIMOUT;
+	
+	public HTTPRequestOptions dublicate(){
+		HTTPRequestOptions copy = new HTTPRequestOptions(server, port, page);
+		copy.requestMethod = this.requestMethod;
+		copy.headerFields = this.headerFields;
+		copy.postData = this.postData;
+		copy.maxSocketCount = this.maxSocketCount;
+		copy.useSSL = this.useSSL;
+		copy.disableCertificateCheck = this.disableCertificateCheck;
+		copy.event = this.event;
+		copy.numRetrys = this.numRetrys;
+		copy.disableDefaultHeaders = this.disableDefaultHeaders;
+		copy.proxy = this.proxy;
+		copy.socketTimeoutMillis = this.socketTimeoutMillis;
+		return copy;
+	}
 	
 	public HTTPRequestOptions(String url){
 		String[] urlElements = parseUrl(url);
@@ -152,19 +171,14 @@ public class HTTPRequestOptions {
 		return proxy;
 	}
 	
-	public HTTPRequestOptions dublicate(){
-		HTTPRequestOptions copy = new HTTPRequestOptions(server, port, page);
-		copy.requestMethod = this.requestMethod;
-		copy.headerFields = this.headerFields;
-		copy.postData = this.postData;
-		copy.maxSocketCount = this.maxSocketCount;
-		copy.useSSL = this.useSSL;
-		copy.disableCertificateCheck = this.disableCertificateCheck;
-		copy.event = this.event;
-		copy.numRetrys = this.numRetrys;
-		copy.disableDefaultHeaders = this.disableDefaultHeaders;
-		copy.proxy = this.proxy;
-		return copy;
+	public HTTPRequestOptions setTimeout(int millis){
+		if(millis < 1) throw new IllegalArgumentException("Timeouts must be at least 1 ms or higher");
+		socketTimeoutMillis = millis;
+		return this;
+	}
+	
+	public int getTimeout(){
+		return socketTimeoutMillis;
 	}
 	
 	private static String[] parseUrl(String url){

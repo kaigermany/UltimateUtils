@@ -19,6 +19,7 @@ public class HTTPClient {
 	private static final HashMap<String, String> DEFAULT_HEADER;
 	private static final byte[] DUMMY_BUFFER = new byte[4096];
 	private static final int MAX_SOCKET_AGE_MILLIS = 120 * 1000;
+	public static final int DEFAULT_SOCKET_TIMOUT = 1800000;
 	
 	static{
 		DEFAULT_HEADER = new HashMap<String, String>(11);
@@ -49,7 +50,7 @@ public class HTTPClient {
 		resetAge();
 	}
 
-	public HTTPResult request(String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, HTTPResultEvent event, boolean noDefaultHeader) throws IOException {
+	public HTTPResult request(String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, HTTPResultEvent event, boolean noDefaultHeader, int timeout) throws IOException {
 		try {
 			resetAge();
 			if(page == null || page.length() == 0 || page.charAt(0) != '/') page = "/" + (page == null ? "" : page);
@@ -66,6 +67,8 @@ public class HTTPClient {
 			if(postData != null){
 				headerFields.put("Content-Length", String.valueOf(postData.length));
 			}
+			
+			socket.setSoTimeout(timeout);
 			
 			StringBuilder sb = new StringBuilder(requestMethod).append(' ').append(page).append(" HTTP/1.1\r\n");
 			for(Entry<String, String> e : headerFields.entrySet()){
@@ -233,6 +236,7 @@ public class HTTPClient {
 			
 			return returningResult;
 		} finally {//ensure instance will not end in a Zombie state
+			socket.setSoTimeout(DEFAULT_SOCKET_TIMOUT);
 			if(parent != null) parent.markInstanceAsUnused(this);
 		}
 	}
