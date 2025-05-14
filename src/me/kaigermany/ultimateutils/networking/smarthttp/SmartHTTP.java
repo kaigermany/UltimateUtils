@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 public class SmartHTTP {
-	//private static int NUM_MAX_CONNECTIONS_PER_SERVER = 10;
 	private static int WATCHDOG_SLEEP_CYCLE = 60 * 1000;
 	
 	private static HashMap<String, HTTPServerGroup> clients = new HashMap<String, HTTPServerGroup>();
@@ -219,49 +218,5 @@ public class SmartHTTP {
 		}, "SmartHTTP Watchdog");
 		t.setDaemon(true);
 		t.start();
-	}
-	
-	
-	
-	
-	
-	
-	
-	private static String[] parseUrl(String url){
-		String protocol = null;
-		int p = url.indexOf("://");
-		if(p != -1) {
-			protocol = url.substring(0, p);
-			url = url.substring(p + 3);
-		}
-		p = url.indexOf('/');
-		String serverName;
-		String targetPath;
-		if(p == -1){
-			serverName = url;
-			targetPath = "/";
-		} else {
-			serverName = url.substring(0, p);
-			targetPath = url.substring(p);
-		}
-		
-		String ip;
-		String port = null;
-		p = serverName.lastIndexOf(':');
-		int p2 = serverName.lastIndexOf(']');
-		if(p2 > p) {//mismatch-test:
-			//pattern: "[ip:0::v6]:port"
-			//so, if ':' is last found
-			//before ']' then it's part of IPv6 and not the port
-			p = -1;
-		}
-		if(p == -1){
-			ip = serverName;
-		} else {
-			ip = serverName.substring(0, p);
-			port = serverName.substring(p + 1);
-		}
-		
-		return new String[]{protocol, ip, port, targetPath};
 	}
 }
