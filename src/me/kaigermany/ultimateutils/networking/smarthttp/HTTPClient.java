@@ -19,7 +19,7 @@ public class HTTPClient {
 	private static final HashMap<String, String> DEFAULT_HEADER;
 	private static final byte[] DUMMY_BUFFER = new byte[4096];
 	private static final int MAX_SOCKET_AGE_MILLIS = 120 * 1000;
-	public static final int DEFAULT_SOCKET_TIMOUT = 1800000;
+	public static final int DEFAULT_SOCKET_TIMEOUT = 1800000;
 	
 	static{
 		DEFAULT_HEADER = new HashMap<String, String>(11);
@@ -236,7 +236,7 @@ public class HTTPClient {
 			
 			return returningResult;
 		} finally {//ensure instance will not end in a Zombie state
-			socket.setSoTimeout(DEFAULT_SOCKET_TIMOUT);
+			socket.setSoTimeout(DEFAULT_SOCKET_TIMEOUT);
 			if(parent != null) parent.markInstanceAsUnused(this);
 		}
 	}

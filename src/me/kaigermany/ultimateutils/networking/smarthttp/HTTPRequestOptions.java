@@ -20,7 +20,7 @@ public class HTTPRequestOptions {
 	private int numRetrys = 3;
 	private boolean disableDefaultHeaders = false;
 	private Proxy proxy = null;
-	private int socketTimeoutMillis = HTTPClient.DEFAULT_SOCKET_TIMOUT;
+	private int socketTimeoutMillis = HTTPClient.DEFAULT_SOCKET_TIMEOUT;
 	
 	public HTTPRequestOptions dublicate(){
 		HTTPRequestOptions copy = new HTTPRequestOptions(server, port, page);
