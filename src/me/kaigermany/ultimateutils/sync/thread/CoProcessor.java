@@ -31,6 +31,7 @@ public class CoProcessor {
 			return next;
 		}
 	});
+	private static final String threadNamePrefix = "CoProcessor_";
 	
 	public static CoProcessor getInstance(){
 		return new CoProcessor();
@@ -38,7 +39,7 @@ public class CoProcessor {
 	
 	private static void triggerStart(){
 		for(int i=0; i<numThreads; i++){
-			if(cpu[i] == null) cpu[i] = new ThreadWorker(queue);
+			if(cpu[i] == null) cpu[i] = new ThreadWorker(queue, threadNamePrefix + i);
 			cpu[i].notifyStart();
 		}
 	}

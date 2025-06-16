@@ -13,16 +13,15 @@ public class Parallel {
 		
 		ProcessorQueue queue = new ProcessorQueue(new QueueIterator(numIterations, function));
 		
+		String prefix = "Parallel_" + System.currentTimeMillis() + "_";
 		for(int i=0; i<numThreads; i++){
-			cpu[i] = new ThreadWorker(queue);
-			cpu[i].notifyStart();
+			(cpu[i] = new ThreadWorker(queue, prefix + i)).notifyStart();
 		}
 		
 		queue.awaitDone();
 		
 		for(int i=0; i<numThreads; i++){
 			cpu[i].awaitIdle();
-			//cpu[i].stop();
 		}
 	}
 	

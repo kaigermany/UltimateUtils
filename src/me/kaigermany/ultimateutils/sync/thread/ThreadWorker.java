@@ -1,15 +1,16 @@
 package me.kaigermany.ultimateutils.sync.thread;
 
 public class ThreadWorker {
-	private ProcessorQueue queue;
 	private volatile boolean isWorking = false;
-	private ThreadLock awaitLock;
 	private volatile boolean isAlive = true;
+	private final ProcessorQueue queue;
+	private final ThreadLock awaitLock;
+	private final String threadName;
 	
-	public ThreadWorker(ProcessorQueue queue){
+	public ThreadWorker(ProcessorQueue queue, String threadName){
 		this.queue = queue;
+		this.threadName = threadName;
 		awaitLock = new ThreadLock();
-		//if(!queue.isEmpty()) 
 		notifyStart();
 	}
 	
@@ -17,7 +18,7 @@ public class ThreadWorker {
 		awaitLock.lock();
 		synchronized (ThreadWorker.this) {
 			if(!isWorking) {
-				Thread thread = new Thread(()->runLoop());
+				Thread thread = new Thread(()->runLoop(), threadName);
 				thread.setDaemon(true);
 				thread.start();
 			}
