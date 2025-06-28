@@ -22,7 +22,12 @@ public class HTTPRequestOptions {
 	private Proxy proxy = null;
 	private int socketTimeoutMillis = HTTPClient.DEFAULT_SOCKET_TIMEOUT;
 	
+	@Deprecated
 	public HTTPRequestOptions dublicate(){
+		return duplicate();
+	}
+	
+	public HTTPRequestOptions duplicate(){
 		HTTPRequestOptions copy = new HTTPRequestOptions(server, port, page);
 		copy.requestMethod = this.requestMethod;
 		copy.headerFields = this.headerFields;
@@ -179,6 +184,22 @@ public class HTTPRequestOptions {
 	
 	public int getTimeout(){
 		return socketTimeoutMillis;
+	}
+	
+	public String toUrl(){
+		return (useSSL ? "https://" : "http://") + server + ":" + port + page;
+	}
+	
+	@Override
+	public String toString(){
+		return "{server = '" + server + "', port = " + port + ", page = '" + page + 
+				"', requestMethod = '" + requestMethod + "', headerFields = " + headerFields +
+				", postData = " + (postData == null ? "null" : ("'" + new String(postData) + "'")) +
+				", maxSocketCount = " + maxSocketCount + ", useSSL = " + useSSL +
+				", disableCertificateCheck = " + disableCertificateCheck +
+				", event = " + String.valueOf(event) + ", numRetrys = " + numRetrys +
+				", disableDefaultHeaders = " + disableDefaultHeaders +
+				", proxy = " + proxy + ", socketTimeoutMillis = " + socketTimeoutMillis;
 	}
 	
 	private static String[] parseUrl(String url){
