@@ -55,6 +55,9 @@ public class SocketFactory {
 	 * @throws IOException
 	 */
 	public static Socket openConnection(String ip, int port, boolean ssl, boolean disableCertificateCheck, Proxy proxy) throws UnknownHostException, IOException {
+		if(ip == null || ip.isEmpty()) {
+			throw new UnknownHostException("IP must not be null or empty");
+		}
 		if (proxy != null) {
 			Socket socket = new Socket(proxy);
 			socket.connect(new InetSocketAddress(ip, port));
