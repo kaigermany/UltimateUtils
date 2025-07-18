@@ -75,16 +75,6 @@ public class CoProcessor {
 		return this;
 	}
 	
-	private void addJobsInternal(ArrayList<AsyncRunnable> jobList){
-		synchronized (activeJobs) {
-			activeJobs.addAll(jobList);
-		}
-		synchronized (queueBuffer) {
-			queueBuffer.addAll(jobList);
-		}
-		triggerStart();
-	}
-	
 	public CoProcessor putIterativeJob(int numIterations, Consumer<Integer> function){
 		awaitLock.lock();
 		ArrayList<AsyncRunnable> jobList = new ArrayList<>(numIterations);
@@ -152,6 +142,24 @@ public class CoProcessor {
 		}
 		addJobsInternal(jobList);
 		return this;
+	}
+	
+	public int getQueueSize(){
+		int size;
+		synchronized (activeJobs) {
+			size = activeJobs.size();
+		}
+		return size;
+	}
+	
+	private void addJobsInternal(ArrayList<AsyncRunnable> jobList){
+		synchronized (activeJobs) {
+			activeJobs.addAll(jobList);
+		}
+		synchronized (queueBuffer) {
+			queueBuffer.addAll(jobList);
+		}
+		triggerStart();
 	}
 	
 	private void finishJob(AsyncRunnable r){
