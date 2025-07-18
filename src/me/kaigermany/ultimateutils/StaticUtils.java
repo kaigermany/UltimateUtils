@@ -336,4 +336,35 @@ public class StaticUtils {
 			}
 		}
 	}
+	
+	public static byte[] replaceBytes(byte[] input, byte[] target, byte[] replacement) {
+		if (target.length == 0) {
+			throw new IllegalArgumentException("Target pattern must not be empty");
+		}
+
+		ByteArrayOutputStream output = new ByteArrayOutputStream(Math.min(1024, input.length));
+		int i = 0;
+		while (i <= input.length - target.length) {
+			boolean match = true;
+			for (int j = 0; j < target.length; j++) {
+				if (input[i + j] != target[j]) {
+					match = false;
+					break;
+				}
+			}
+
+			if (match) {
+				output.write(replacement, 0, replacement.length);
+				i += target.length;
+			} else {
+				output.write(input[i]);
+				i++;
+			}
+		}
+
+		// Write any remaining bytes
+		output.write(input, i, input.length - i);
+
+		return output.toByteArray();
+	}
 }
