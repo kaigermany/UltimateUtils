@@ -32,11 +32,22 @@ public class MapUtils {
 		
 		return Arrays.asList(entries);
 	}
-
+	
 	@SuppressWarnings("unchecked")
 	private static int compareObjects(Object refA, Object refB){
-		if(refA != null && refA instanceof Comparable){
+		if(refA == null){
+			return refB != null ? -1 : 0;
+		} else if(refB == null){
+			return refA != null ? 1 : 0;
+		}
+		if(refA instanceof Comparable){
 			return ((Comparable<Object>)refA).compareTo(refB);
+		} else if(refA instanceof Number && refB instanceof Number){
+			if(refA instanceof Float || refB instanceof Float || refA instanceof Double || refB instanceof Double){
+				return Double.compare(((Number)refA).doubleValue(), ((Number)refB).doubleValue());
+			} else {
+				return Long.compare(((Number)refA).longValue(), ((Number)refB).longValue());
+			}
 		} else {
 			return String.valueOf(refA).compareTo(String.valueOf(refB));
 		}
