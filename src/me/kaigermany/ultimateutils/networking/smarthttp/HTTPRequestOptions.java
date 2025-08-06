@@ -48,6 +48,9 @@ public class HTTPRequestOptions {
 		int port;
 		if(urlElements[0] != null){
 			useSSL = urlElements[0].equals("https");
+			if(!useSSL && !urlElements[0].equals("http")){
+				throw new IllegalArgumentException("unknown protocol '" + urlElements[0] + "', expects 'http' or 'https'");
+			}
 		}
 		if(urlElements[2] == null) {
 			port = useSSL ? 443 : 80;
