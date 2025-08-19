@@ -2,6 +2,7 @@ package me.kaigermany.ultimateutils.data;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -31,6 +32,16 @@ public class MapUtils {
 		Arrays.parallelSort(entries, comparator);
 		
 		return Arrays.asList(entries);
+	}
+	
+	@SafeVarargs
+	public static <A> Map<A, A> toMap(A... keyValuePairs){
+		if((keyValuePairs.length & 1) != 0) throw new IllegalArgumentException("number of args must be even");
+		HashMap<A, A> out = new HashMap<>();
+		for(int i=0; i<keyValuePairs.length; i+=2){
+			out.put(keyValuePairs[i], keyValuePairs[i + 1]);
+		}
+		return out;
 	}
 	
 	@SuppressWarnings("unchecked")
