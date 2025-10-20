@@ -70,7 +70,7 @@ public class FFmpegVideoWriter {
 				width + "x" + height, "-framerate", String.valueOf(framerate), "-i", "-", "-c:v", codec, "-pix_fmt",
 				pixelFormat, outputFile.getAbsolutePath());
 
-		pb.redirectError(ProcessBuilder.Redirect.INHERIT); // Für Debug-Ausgaben
+		pb.redirectError(ProcessBuilder.Redirect.INHERIT);//print debug output into console.
 
 		ffmpegProcess = pb.start();
 		//ffmpegIn = new BufferedOutputStream(ffmpegProcess.getOutputStream());
