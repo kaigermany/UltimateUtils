@@ -21,12 +21,12 @@ public class HTTPRequestOptions {
 	private boolean disableDefaultHeaders = false;
 	private Proxy proxy = null;
 	private int socketTimeoutMillis = HTTPClient.DEFAULT_SOCKET_TIMEOUT;
-	
+	/*
 	@Deprecated
 	public HTTPRequestOptions dublicate(){
 		return duplicate();
 	}
-	
+	*/
 	public HTTPRequestOptions duplicate(){
 		HTTPRequestOptions copy = new HTTPRequestOptions(server, port, page);
 		copy.requestMethod = this.requestMethod;
