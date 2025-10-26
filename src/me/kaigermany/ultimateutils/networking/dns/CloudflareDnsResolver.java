@@ -1,7 +1,6 @@
 package me.kaigermany.ultimateutils.networking.dns;
 
 import java.net.InetAddress;
-import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 
@@ -35,8 +34,7 @@ public class CloudflareDnsResolver extends DnsResolver {
 		}
 		
 		try{
-			@SuppressWarnings("deprecation")
-			String resp = new String(serverGet("https://1.1.1.1/dns-query?name=" + URLEncoder.encode(domain) + "&type=A"), StandardCharsets.UTF_8);
+			String resp = new String(serverGet("https://1.1.1.1/dns-query?name=" + encodeUrl(domain) + "&type=A"), StandardCharsets.UTF_8);
 			
 			//find location of Answer parameter
 			resp = resp.substring(resp.indexOf("\"Answer\""));

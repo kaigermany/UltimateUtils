@@ -3,13 +3,29 @@ package me.kaigermany.ultimateutils.networking.dns;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 
 public abstract class DnsResolver {
+	private static final String URL_ENCODER_STANDARD_FORMAT = StandardCharsets.UTF_8.toString();
+	
 	public abstract InetAddress resolve(String hostname) throws UnknownHostException;
+	
+	/**
+	 * wrapper for URLEncoder.encode()
+	 * @param data
+	 *            input text
+	 * @return encoded text
+	 * @throws UnsupportedEncodingException
+	 */
+	public static String encodeUrl(String data) throws UnsupportedEncodingException {
+		return URLEncoder.encode(data, URL_ENCODER_STANDARD_FORMAT);
+	}
 	
 	/**
 	 * Executes a simple HTTP-GET call to allow simple DNS-OVER-HTTPS operations..
