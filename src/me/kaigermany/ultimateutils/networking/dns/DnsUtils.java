@@ -2,7 +2,6 @@ package me.kaigermany.ultimateutils.networking.dns;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
 
 public class DnsUtils {
 	//based on https://stackoverflow.com/questions/41265266/how-to-solve-inaccessibleobjectexception-unable-to-make-member-accessible-m

@@ -11,7 +11,6 @@ public class GoogleDnsResolver extends DnsResolver {
 
 	@Override
 	public InetAddress resolve(String hostname) throws UnknownHostException {
-		
 		//hardcoded self-resolving.
 		if (hostname.equals("dns.google.com")) {
 			return InetAddress.getByAddress(hostname, new byte[]{8, 8, 4, 4});
@@ -21,9 +20,7 @@ public class GoogleDnsResolver extends DnsResolver {
 		}
 		
 		String ipText = runDnsRequest(hostname);
-		System.out.println(hostname + " -> " + ipText);
 		byte[] ipv4Bytes = textToNumericFormatV4(ipText);
-		//System.out.println("ipv4Bytes = " + Arrays.toString(ipv4Bytes));
 		if(ipv4Bytes == null) {
 			return resolve(ipText);
 		}
@@ -38,7 +35,6 @@ public class GoogleDnsResolver extends DnsResolver {
 		try{
 			@SuppressWarnings("deprecation")
 			String resp = new String(serverGet("https://dns.google.com/resolve?name=" + URLEncoder.encode(domain) + "&type=A"), StandardCharsets.UTF_8);
-			//resp = resp.split("\"Answer\"")[1].split("\"data\"")[1].split("\"")[1];
 			
 			//find location of Answer parameter
 			resp = resp.substring(resp.indexOf("\"Answer\""));
@@ -48,5 +44,4 @@ public class GoogleDnsResolver extends DnsResolver {
 			throw (UnknownHostException)new UnknownHostException(domain).initCause(e);
 		}
 	}
-	
 }
