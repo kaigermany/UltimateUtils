@@ -12,139 +12,84 @@ import java.util.Arrays;
 
 public class DDSparser {
 	
-	public static BufferedImage[] parse(InputStream is){
-		/*
-		@Deprecated
-		public static BufferedImage parse(InputStream is){
-			try{
-				TextureImageFormatLoaderTGA loader = new TextureImageFormatLoaderTGA();
-				BufferedImage imageToConvert = loader.loadTextureImage(is , true, false);
-				return imageToConvert;
-			}catch(Exception e){
-				e.printStackTrace();
-				return null;
-			}
-		}
-		@Deprecated
-		public static byte[] decompress(byte[] compressedData, int width, int height, int type){
-			Squish.CompressionType t = Squish.CompressionType.DXT1;
-			if(type == 2) t = Squish.CompressionType.DXT3;
-			if(type == 4) t = Squish.CompressionType.DXT5;
-			return DXTBufferDecompressor.squishDecompressToArray(compressedData, width, height, t);
-		}
-		*/
-		try{
-			DataInputStream dis = new DataInputStream(is);
-			Header header = new Header();
-			header.read(dis);
-			System.out.println("size: " + header.width + " | " + header.height);
-			
-			final int DDSD_LINEARSIZE = 0x00080000; // dwLinearSize is valid
-			final int DDPF_FOURCC = 0x00000004; // FourCC code is valid
-			if ((header.pfFlags & DDPF_FOURCC) != 0 && (header.flags & DDSD_LINEARSIZE) == 0) {
-				// Figure out how big the linear size should be
-				int depth = header.backBufferCountOrDepth;
-				if (depth == 0) {
-					depth = 1;
-				}
-				//System.out.println(header.width + " | " + header.height);
-				
-				header.pitchOrLinearSize = computeCompressedBlockSize(header.width, header.height, depth, header.pfFourCC);
-				header.flags |= DDSD_LINEARSIZE;
+	public static BufferedImage[] parse(InputStream is) throws IOException {
+		DataInputStream dis = new DataInputStream(is);
+		Header header = new Header();
+		header.read(dis);
+		//System.out.println("size: " + header.width + " | " + header.height);
+		
+		final int DDSD_LINEARSIZE = 0x00080000; // dwLinearSize is valid
+		final int DDPF_FOURCC = 0x00000004; // FourCC code is valid
+		if ((header.pfFlags & DDPF_FOURCC) != 0 && (header.flags & DDSD_LINEARSIZE) == 0) {
+			// Figure out how big the linear size should be
+			int depth = header.backBufferCountOrDepth;
+			if (depth == 0) {
+				depth = 1;
 			}
 			
-			/*
-			final int side = 0;
+			header.pitchOrLinearSize = computeCompressedBlockSize(header.width, header.height, depth, header.pfFourCC);
+			header.flags |= DDSD_LINEARSIZE;
+		}
+		
+		int[] midMapByteSizes;
+		{
 			int numLevels = getNumMipMaps(header);
 			if (numLevels == 0) {
 				numLevels = 1;
 			}
-			ImageInfo[] result = new ImageInfo[numLevels];
+			midMapByteSizes = new int[numLevels];
 			for (int i = 0; i < numLevels; i++) {
-				result[i] = getMipMap(header, side, i);
+				midMapByteSizes[i] = mipMapSizeInBytes(header, i);
 			}
-			*/
-			int[] midMapByteSizes;
-			{
-				int numLevels = getNumMipMaps(header);
-				if (numLevels == 0) {
-					numLevels = 1;
+		}
+		int cubepages = isCubemap(header) ? 6 : 1;
+		byte[][] frames = new byte[cubepages * midMapByteSizes.length][];
+		for(int i=0; i<frames.length; i++) {
+			byte[] arr = new byte[midMapByteSizes[i / cubepages]];
+			dis.readFully(arr);
+			//for(int ii=1; ii<midMapByteSizes.length; ii++) dis.skip(midMapByteSizes[ii]);
+			frames[i] = arr;
+		}
+		
+		//final int DDPF_FOURCC = 0x00000004; // FourCC code is valid
+		//return new ImageInfo(next, Math.max(header.width >>>= map, 1), Math.max(header.height >>>= map, 1), (header.pfFlags & DDPF_FOURCC) != 0, header.pfFourCC);
+		BufferedImage[] out = new BufferedImage[frames.length];
+		for(int i=0; i<frames.length; i++) {
+			int w = header.width >> (i / cubepages);
+			int h = header.height >> (i / cubepages);
+			
+			//System.out.println(w + " | " + h);
+			//byte[] arr1 = new byte[header.width * header.height * 4];
+			//arr1 = Squish.decompressImage(arr1, header.width, header.height, frames[i], PixelFormats.getSquishCompressionFormat(header.pfFourCC));
+			BufferedImage img = new BufferedImage(w, h, 2);
+			
+			if(header.pfFourCC == 0){
+				try{
+					int[] bufPtr = ((DataBufferInt)img.getRaster().getDataBuffer()).getData();
+					ByteBuffer.wrap(frames[i]).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().get(bufPtr);
+				}catch(Exception e){
+					e.printStackTrace();
 				}
-				midMapByteSizes = new int[numLevels];
-				for (int i = 0; i < numLevels; i++) {
-					midMapByteSizes[i] = mipMapSizeInBytes(header, i);
-				}
-			}
-			int cubepages = isCubemap(header) ? 6 : 1;
-			byte[][] frames = new byte[cubepages * midMapByteSizes.length][];
-			for(int i=0; i<frames.length; i++) {
-				byte[] arr = new byte[midMapByteSizes[i / cubepages]];
-				dis.readFully(arr);
-				//for(int ii=1; ii<midMapByteSizes.length; ii++) dis.skip(midMapByteSizes[ii]);
-				frames[i] = arr;
+			} else{
+				decompressImage(((DataBufferInt)img.getRaster().getDataBuffer()).getData(), w, h, frames[i], getSquishCompressionFormat(header.pfFourCC));
 			}
 			
-			/*
-			// Figure out how far to seek
-			int seek = 0;//Header.writtenSize();
-			if (isCubemap(header)) {
-				seek += sideShiftInBytes(header, side);
-			}
-			for (int i = 0; i < map; i++) {
-				seek += mipMapSizeInBytes(header, i);
-			}
-			buf.limit(seek + mipMapSizeInBytes(header, map));
-			buf.position(seek);
-			ByteBuffer next = buf.slice();
-			buf.position(0);
-			buf.limit(buf.capacity());
-			*/
-			//final int DDPF_FOURCC = 0x00000004; // FourCC code is valid
-			//return new ImageInfo(next, Math.max(header.width >>>= map, 1), Math.max(header.height >>>= map, 1), (header.pfFlags & DDPF_FOURCC) != 0, header.pfFourCC);
-			BufferedImage[] out = new BufferedImage[frames.length];
-			for(int i=0; i<frames.length; i++) {
-				int w = header.width >> (i / cubepages);
-				int h = header.height >> (i / cubepages);
-				
-				System.out.println(w + " | " + h);
-				//byte[] arr1 = new byte[header.width * header.height * 4];
-				//arr1 = Squish.decompressImage(arr1, header.width, header.height, frames[i], PixelFormats.getSquishCompressionFormat(header.pfFourCC));
-				BufferedImage img = new BufferedImage(w, h, 2);
-				
-				//ByteBuffer.wrap(arr1).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().get(
-				//	((DataBufferInt)img.getRaster().getDataBuffer()).getData()
-				//);
-				if(header.pfFourCC == 0){
-					try{
-						int[] bufPtr = ((DataBufferInt)img.getRaster().getDataBuffer()).getData();
-						ByteBuffer.wrap(frames[i]).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().get(bufPtr);
-					}catch(Exception e){
-						e.printStackTrace();
-					}
-				} else{
-					decompressImage(((DataBufferInt)img.getRaster().getDataBuffer()).getData(), w, h, frames[i], getSquishCompressionFormat(header.pfFourCC));
-				}
-				
-				out[i] = img;
-			}
-			return out;
-		}catch(Exception e){
-			e.printStackTrace();
-			return null;
+			out[i] = img;
 		}
+		return out;
 	}
 	
-	public static CompressionType getSquishCompressionFormat(final int pixelFormat) throws IOException {
+	public static DDSCompressionType getSquishCompressionFormat(final int pixelFormat) throws IOException {
 		final int D3DFMT_DXT1 = 0x31545844;
 		final int D3DFMT_DXT3 = 0x33545844;
 		final int D3DFMT_DXT5 = 0x35545844;
 		switch(pixelFormat) { 
 		case D3DFMT_DXT1: 
-			return CompressionType.DXT1;
+			return DDSCompressionType.DXT1;
 		case D3DFMT_DXT3: 
-			return CompressionType.DXT3;
+			return DDSCompressionType.DXT3;
 		case D3DFMT_DXT5: 
-			return CompressionType.DXT5;
+			return DDSCompressionType.DXT5;
 		default:
 			throw new IOException("UnsupportedDataTypeException: given pixel format not supported compression format (" + Integer.toHexString(pixelFormat) + ")");
 		}
@@ -170,53 +115,6 @@ public class DDSparser {
 		final int DDSCAPS2_CUBEMAP = 0x00000200;
 		return ((header.ddsCaps1 & DDSCAPS_COMPLEX) != 0) && ((header.ddsCaps2 & DDSCAPS2_CUBEMAP) != 0);
 	}
-	/*
-	private static int sideShiftInBytes(Header header, int side) {
-		final int DDSCAPS2_CUBEMAP_POSITIVEX = 0x00000400;
-		final int DDSCAPS2_CUBEMAP_NEGATIVEX = 0x00000800;
-		final int DDSCAPS2_CUBEMAP_POSITIVEY = 0x00001000;
-		final int DDSCAPS2_CUBEMAP_NEGATIVEY = 0x00002000;
-		final int DDSCAPS2_CUBEMAP_POSITIVEZ = 0x00004000;
-		final int DDSCAPS2_CUBEMAP_NEGATIVEZ = 0x00008000;
-		final int[] sides = {
-				DDSCAPS2_CUBEMAP_POSITIVEX,
-				DDSCAPS2_CUBEMAP_NEGATIVEX,
-				DDSCAPS2_CUBEMAP_POSITIVEY,
-				DDSCAPS2_CUBEMAP_NEGATIVEY,
-				DDSCAPS2_CUBEMAP_POSITIVEZ,
-				DDSCAPS2_CUBEMAP_NEGATIVEZ
-		};
-
-		int shift = 0;
-		int sideSize = sideSizeInBytes(header);
-		for (int i = 0; i < sides.length; i++) {
-			int temp = sides[i];
-			if ((temp & side) != 0) {
-				return shift;
-			}
-
-			shift += sideSize;
-		}
-
-		throw new RuntimeException("Illegal side: " + side);
-	}
-	*/
-	
-	/*
-	private static int sideSizeInBytes(Header header) {
-		int numLevels = getNumMipMaps(header);
-		if (numLevels == 0) {
-			numLevels = 1;
-		}
-
-		int size = 0;
-		for (int i = 0; i < numLevels; i++) {
-			size += mipMapSizeInBytes(header, i);
-		}
-
-		return size;
-	}
-	*/
 	
 	public static int mipMapSizeInBytes(Header header, int map) {
 		int width  = Math.max(header.width >>> map, 1);
@@ -355,10 +253,8 @@ public class DDSparser {
 		}
 	}
 	
-	public static void decompressImage(int[] rgba, final int width, final int height, final byte[] blocks, final CompressionType type) {
-		System.out.println("DDS type: " + type);
-		//rgba = checkDecompressInput(rgba, width, height, blocks, type);
-
+	public static void decompressImage(int[] rgba, final int width, final int height, final byte[] blocks, final DDSCompressionType type) {
+		//System.out.println("DDS type: " + type);
 		final int[] targetRGBA = new int[16];
 
 		// loop over blocks
@@ -387,135 +283,25 @@ public class DDSparser {
 			}
 		}
 	}
-/*
-	private static byte[] checkDecompressInput(byte[] rgba, final int width, final int height, final byte[] blocks, final CompressionType type) {
-		final int storageSize = getStorageRequirements(width, height, type);
-
-		if ( blocks == null || blocks.length < storageSize )
-			throw new IllegalArgumentException("Invalid source image data specified.");
-
-		if ( rgba == null || rgba.length < (width * height * 4) )
-			rgba = new byte[(width * height * 4)];
-
-		return rgba;
-	}
-	*/
 	
-	private static void decompress(final int[] rgba, final byte[] block, final int offset, final CompressionType type) {
+	private static void decompress(final int[] rgba, final byte[] block, final int offset, final DDSCompressionType type) {
 		// decompress colour
-		ColourBlock.decompressColour(rgba, block, offset + type.blockOffset, type == CompressionType.DXT1);
+		ColourBlock.decompressColour(rgba, block, offset + type.blockOffset, type == DDSCompressionType.DXT1);
 
 		// decompress alpha separately if necessary
-		if ( type == CompressionType.DXT3 )
+		if ( type == DDSCompressionType.DXT3 )
 			CompressorAlpha.decompressAlphaDxt3(rgba, block, offset);
-		else if ( type == CompressionType.DXT5 )
+		else if ( type == DDSCompressionType.DXT5 )
 			CompressorAlpha.decompressAlphaDxt5(rgba, block, offset);
-	}
-	
-	public static final class Vec {
-
-		private float x;
-		private float y;
-		private float z;
-
-		public Vec() {
-		}
-
-		public Vec(final float a) {
-			this(a, a, a);
-		}
-
-		public Vec(final float a, final float b, final float c) {
-			x = a;
-			y = b;
-			z = c;
-		}
-
-		public float x() { return x; }
-
-		public float y() { return y; }
-
-		public float z() { return z; }
-
-		public Vec set(final float a) {
-			this.x = a;
-			this.y = a;
-			this.z = a;
-
-			return this;
-		}
-
-		public Vec set(final float x, final float y, final float z) {
-			this.x = x;
-			this.y = y;
-			this.z = z;
-
-			return this;
-		}
-
-		public Vec set(final Vec v) {
-			this.x = v.x;
-			this.y = v.y;
-			this.z = v.z;
-
-			return this;
-		}
-
-		public Vec add(final Vec v) {
-			x += v.x;
-			y += v.y;
-			z += v.z;
-
-			return this;
-		}
-
-		public Vec add(final float x, final float y, final float z) {
-			this.x += x;
-			this.y += y;
-			this.z += z;
-
-			return this;
-		}
-
-		public Vec sub(final Vec v) {
-			x -= v.x;
-			y -= v.y;
-			z -= v.z;
-
-			return this;
-		}
-
-		public Vec mul(final float s) {
-			x *= s;
-			y *= s;
-			z *= s;
-
-			return this;
-		}
-
-		public Vec div(final float s) {
-			final float t = 1.0f / s;
-
-			x *= t;
-			y *= t;
-			z *= t;
-
-			return this;
-		}
-
-		public float dot(final Vec v) {
-			return x * v.x + y * v.y + z * v.z;
-		}
-
 	}
 	
 	public static final class ColourBlock {
 
-		private static final int[] remapped = new int[16];
+		private static final int[] remapped = new int[16];//TODO remove static state! thats not multithreadding-save!
 
-		private static final int[] indices = new int[16];
+		private static final int[] indices = new int[16];//TODO
 
-		private static final int[] codes = new int[16];
+		private static final int[] codes = new int[16];//TODO
 
 		private ColourBlock() {}
 
@@ -524,7 +310,7 @@ public class DDSparser {
 		protected static final float GRID_Z = 31.0f;
 		
 
-		private static int floatTo565(final Vec colour) {
+		private static int floatTo565(final DDSVec colour) {
 			// get the components in the correct range
 			final int r = Math.round(GRID_X * colour.x());
 			final int g = Math.round(GRID_Y * colour.y());
@@ -548,7 +334,7 @@ public class DDSparser {
 			}
 		}
 
-		public static void writeColourBlock3(final Vec start, final Vec end, final int[] indices, final byte[] block, final int offset) {
+		public static void writeColourBlock3(final DDSVec start, final DDSVec end, final int[] indices, final byte[] block, final int offset) {
 			// get the packed values
 			int a = floatTo565(start);
 			int b = floatTo565(end);
@@ -576,7 +362,7 @@ public class DDSparser {
 			writeColourBlock(a, b, remapped, block, offset);
 		}
 
-		public static void writeColourBlock4(final Vec start, final Vec end, final int[] indices, final byte[] block, final int offset) {
+		public static void writeColourBlock4(final DDSVec start, final DDSVec end, final int[] indices, final byte[] block, final int offset) {
 			// get the packed values
 			int a = floatTo565(start);
 			int b = floatTo565(end);
@@ -675,16 +461,16 @@ public class DDSparser {
 	
 	public static final class CompressorAlpha {
 
-		private static final int[] swapped = new int[16];
+		private static final int[] swapped = new int[16];//TODO
 
-		private static final int[] codes5 = new int[8];
-		private static final int[] codes7 = new int[8];
+		private static final int[] codes5 = new int[8];//TODO
+		private static final int[] codes7 = new int[8];//TODO
 
-		private static final int[] indices5 = new int[16];
-		private static final int[] indices7 = new int[16];
+		private static final int[] indices5 = new int[16];//TODO
+		private static final int[] indices7 = new int[16];//TODO
 
-		private static final int[] codes = new int[8];
-		private static final int[] indices = new int[16];
+		private static final int[] codes = new int[8];//TODO
+		private static final int[] indices = new int[16];//TODO
 
 		private CompressorAlpha() {}
 
@@ -974,20 +760,5 @@ public class DDSparser {
 			//ByteBuffer.wrap(rgba2).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().get(rgba);
 		}
 
-	}
-	
-	public static enum CompressionType {
-
-		DXT1(8),
-		DXT3(16),
-		DXT5(16);
-
-		public final int blockSize;
-		public final int blockOffset;
-
-		CompressionType(final int blockSize) {
-			this.blockSize = blockSize;
-			this.blockOffset = blockSize - 8;
-		}
 	}
 }

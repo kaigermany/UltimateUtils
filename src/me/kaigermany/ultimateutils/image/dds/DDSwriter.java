@@ -5,61 +5,43 @@ import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 
-import javax.imageio.ImageIO;
-
 import me.kaigermany.ultimateutils.image.dds.DDSLookupTables;
 import me.kaigermany.ultimateutils.image.dds.DDSparser.ColourBlock;
-import me.kaigermany.ultimateutils.image.dds.DDSparser.Vec;
 
-// https://github.com/Dahie/DDS-Utils/tree/master
+// heavily based on: https://github.com/Dahie/DDS-Utils/tree/master
 
 public class DDSwriter {
-	public static void test(){
-		try {
-			int pixelformat = D3DFMT_DXT1;
-			boolean generateMipMaps = true;
-			
-			//StaticUtils.saveImage(DDSparser.parse(new BufferedInputStream(new FileInputStream("H:/build2.dds")))[0], new File("H:/decoded_rebuild.png"));
-			FileOutputStream fos = new FileOutputStream(new File("H:/test.dds"));
-			write(fos, ImageIO.read(new File("H:/test.jpg")), CompressionType.DXT1, false);
-			fos.close();
-			
 
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	public static void writeDDS(BufferedImage img, OutputStream os, DDSCompressionType format,	boolean generateMipMaps) throws IOException {
+		write(os, img, format, generateMipMaps);
 	}
-	/*
-	private void readFromFile(final File file) throws IOException {
-		fis = new FileInputStream(file);
-		chan = fis.getChannel();
-		final ByteBuffer buf = chan.map(FileChannel.MapMode.READ_ONLY, 0, (int) file.length());
-		readFromBuffer(buf);
-	}
-	*/
 	
 	public static void writeDDS(BufferedImage img, OutputStream os) throws IOException {
-		write(os, img, CompressionType.DXT5, false);
+		write(os, img, DDSCompressionType.DXT5, false);
 	}
 	/*
 	public static boolean isPowerOfTwo(int a){
 		return ((a - 1) & a) == 0;//TODO TEST!!!!!
-	}*/
+	}
+	*/
 	public static int calculateMaxNumberOfMipMaps(final int width, final int height) {
 		return ((int) Math.floor(Math.log(Math.max(width, height)) / Math.log(2.0)))+1; // plus original
 	}
+	
 	public static boolean isPowerOfTwo(final int value) {
 		double p = Math.floor(Math.log(value) / Math.log(2.0));
 		double n = Math.pow(2.0, p);
 	    return (n==value);
+	}
+	
+	private static boolean hasCubicDimensions(BufferedImage topmost) {
+		return !isPowerOfTwo(topmost.getWidth()) && !isPowerOfTwo(topmost.getHeight());
 	}
 
 	private static final int D3DFMT_R8G8B8    			= 20;
@@ -101,7 +83,7 @@ public class DDSwriter {
 	
 	public static void write(OutputStream os, 
 			BufferedImage sourceImage, 
-			CompressionType format,
+			DDSCompressionType format,
 			boolean generateMipMaps) throws IOException {
 		
 		int width = sourceImage.getWidth();
@@ -115,7 +97,7 @@ public class DDSwriter {
 		write(format, width, height, mipmapBuffer, os);
 	}
 
-	private static byte[][] getDXTCompressedBuffer(ArrayList<BufferedImage> mipmaps, CompressionType compressionType) {
+	private static byte[][] getDXTCompressedBuffer(ArrayList<BufferedImage> mipmaps, DDSCompressionType compressionType) {
 		byte[][] mipmapBuffer = new byte[mipmaps.size()][];
 		for (int j = 0; j < mipmaps.size(); j++) {
 			BufferedImage image = mipmaps.get(j);
@@ -134,7 +116,7 @@ public class DDSwriter {
 		return img;
 	}
 	
-	public static void write(CompressionType format, final int width, final int height, final byte[][] mipmapData,
+	public static void write(DDSCompressionType format, final int width, final int height, final byte[][] mipmapData,
 			OutputStream os) throws IOException {
 		final int mipmapCount = mipmapData.length;
 
@@ -177,9 +159,9 @@ public class DDSwriter {
 	}
 
 	private static int computeCompressedBlockSize(final int width, final int height, final int depth,
-			CompressionType format) {
+			DDSCompressionType format) {
 		int blockSize = ((width + 3) / 4) * ((height + 3) / 4) * ((depth + 3) / 4);
-		if (format == CompressionType.DXT1) {
+		if (format == DDSCompressionType.DXT1) {
 			blockSize *= 8;
 		} else {// DXT3, DXT5
 			blockSize *= 16;
@@ -284,10 +266,6 @@ public class DDSwriter {
 		}
 	}
 	
-	private static boolean hasCubicDimensions(BufferedImage topmost) {
-		return !isPowerOfTwo(topmost.getWidth()) && !isPowerOfTwo(topmost.getHeight());
-	}
-	
 	private static ArrayList<BufferedImage> generateMipmaps(BufferedImage image, boolean generateMipMaps){
 		ArrayList<BufferedImage> mipmaps = new ArrayList<BufferedImage>(10);
 		mipmaps.add(image);
@@ -376,12 +354,12 @@ public class DDSwriter {
 
 	
 
-	private static int calcBlockSize(final int width, final int height, final CompressionType type) {
+	private static int calcBlockSize(final int width, final int height, final DDSCompressionType type) {
 		return ((width + 3) / 4) * ((height + 3) / 4) * type.blockSize;
 	}
 
 
-	private static byte[] compressImage(final byte[] rgba, final int width, final int height, final CompressionType type) {
+	private static byte[] compressImage(final byte[] rgba, final int width, final int height, final DDSCompressionType type) {
 		int storageRequirements = calcBlockSize(width, height, type);
 		byte[] compressedBytes = new byte[storageRequirements];
 		final boolean weightAlpha = false;
@@ -432,7 +410,7 @@ public class DDSwriter {
 	}
 
 	private static void compressBlock(final byte[] rgba, final int enabledPixelMask, final byte[] compressedBytes, final int offset,
-			final CompressionType type, final boolean weightAlpha) {
+			final DDSCompressionType type, final boolean weightAlpha) {
 		// get the block locations
 		ColourSet colours = new ColourSet();
 		final int colourBlock = offset + type.blockOffset;
@@ -449,9 +427,9 @@ public class DDSwriter {
 		}
 
 		// compress alpha separately if necessary
-		if (type == CompressionType.DXT3)
+		if (type == DDSCompressionType.DXT3)
 			compressAlphaDxt3(rgba, enabledPixelMask, compressedBytes, alphaBlock);
-		else if (type == CompressionType.DXT5)
+		else if (type == DDSCompressionType.DXT5)
 			compressAlphaDxt5(rgba, enabledPixelMask, compressedBytes, alphaBlock);
 	}
 
@@ -471,22 +449,11 @@ public class DDSwriter {
 		return bi;
 	}
 
-	public enum CompressionType {
-		DXT1(8), DXT3(16), DXT5(16);
-
-		public final int blockSize;
-		public final int blockOffset;
-
-		CompressionType(final int blockSize) {
-			this.blockSize = blockSize;
-			this.blockOffset = blockSize - 8;
-		}
-	}
 
 	public static class ColourSet {
 		private int count;
 	
-		private final Vec[] points = new Vec[16];
+		private final DDSVec[] points = new DDSVec[16];
 		private final float[] weights = new float[16];
 		private final int[] remap = new int[16];
 	
@@ -494,12 +461,12 @@ public class DDSwriter {
 	
 		ColourSet() {
 			for ( int i = 0; i < points.length; i++ )
-				points[i] = new Vec();
+				points[i] = new DDSVec();
 		}
 	
-		void init(final byte[] rgba, final int enabledPixelMask, final CompressionType type, final boolean weightAlpha) {
+		void init(final byte[] rgba, final int enabledPixelMask, final DDSCompressionType type, final boolean weightAlpha) {
 			// check the compression mode for dxt1
-			final boolean isDXT1 = type == CompressionType.DXT1;
+			final boolean isDXT1 = type == DDSCompressionType.DXT1;
 	
 			count = 0;
 			transparent = false;
@@ -561,7 +528,7 @@ public class DDSwriter {
 	
 		int getCount() { return count; }
 	
-		Vec[] getPoints() { return points; }
+		DDSVec[] getPoints() { return points; }
 	
 		float[] getWeights() { return weights; }
 	
@@ -591,7 +558,7 @@ public class DDSwriter {
 	private static final float ONE_THIRD = 1.0f / 3.0f;
 	private static final float HALF = 0.5f;
 
-	public static void CompressCluster(final ColourSet colours, final CompressionType type, final byte[] block, final int offset) {
+	public static void CompressCluster(final ColourSet colours, final DDSCompressionType type, final byte[] block, final int offset) {
 		// initialise the best error
 		float[] globalBestErrorPtr = {Float.MAX_VALUE};
 
@@ -601,11 +568,11 @@ public class DDSwriter {
 		final Matrix covariance2 = Matrix.computeWeightedCovariance(colours);
 
 		// compute the principle component
-		Vec principle = Matrix.computePrincipleComponent(covariance2);
+		DDSVec principle = Matrix.computePrincipleComponent(covariance2);
 		
-		final Vec xxSum = new Vec();
+		final DDSVec xxSum = new DDSVec();
 		
-		if (type == CompressionType.DXT1) {
+		if (type == DDSCompressionType.DXT1) {
 			compress3(block, offset, colours, principle, globalBestErrorPtr, xxSum);
 			if (!colours.isTransparent()) {
 				compress4(block, offset, colours, principle, globalBestErrorPtr, xxSum);
@@ -615,15 +582,15 @@ public class DDSwriter {
 		}
 	}
 
-	public static void compress3(final byte[] block, final int offset, ColourSet colours, Vec principle, float[] globalBestErrorPtr, Vec xxSum) {
+	public static void compress3(final byte[] block, final int offset, ColourSet colours, DDSVec principle, float[] globalBestErrorPtr, DDSVec xxSum) {
 		final int count = colours.getCount();
 
-		final Vec bestStart = new Vec(0.0f);
-		final Vec bestEnd = new Vec(0.0f);
+		final DDSVec bestStart = new DDSVec(0.0f);
+		final DDSVec bestEnd = new DDSVec(0.0f);
 		float bestError = globalBestErrorPtr[0];
 
-		final Vec a = new Vec();
-		final Vec b = new Vec();
+		final DDSVec a = new DDSVec();
+		final DDSVec b = new DDSVec();
 
 		float[] weighted = new float[16 * 3];
 		final float[] weights = new float[16];
@@ -714,15 +681,15 @@ public class DDSwriter {
 		}
 	}
 
-	public static void compress4(final byte[] block, final int offset, ColourSet colours, Vec principle, float[] globalBestErrorPtr, Vec xxSum) {
+	public static void compress4(final byte[] block, final int offset, ColourSet colours, DDSVec principle, float[] globalBestErrorPtr, DDSVec xxSum) {
 		final int count = colours.getCount();//2..16
 
-		final Vec bestStart = new Vec(0.0f);
-		final Vec bestEnd = new Vec(0.0f);
+		final DDSVec bestStart = new DDSVec(0.0f);
+		final DDSVec bestEnd = new DDSVec(0.0f);
 		float bestError = globalBestErrorPtr[0];
 
-		final Vec start = new Vec();
-		final Vec end = new Vec();
+		final DDSVec start = new DDSVec();
+		final DDSVec end = new DDSVec();
 		
 		float[] weighted = new float[16 * 3];
 		final float[] weights = new float[16];
@@ -822,11 +789,11 @@ public class DDSwriter {
 		}
 	}
 
-	private static boolean constructOrdering(final Vec axis, final int iteration, ColourSet colours, float[] weights, float[] weighted, int[] orders, Vec xxSum) {
+	private static boolean constructOrdering(final DDSVec axis, final int iteration, ColourSet colours, float[] weights, float[] weighted, int[] orders, DDSVec xxSum) {
 		final float[] dps = new float[16];
 		// cache some values
 		final int count = colours.getCount();
-		final Vec[] values = colours.getPoints();
+		final DDSVec[] values = colours.getPoints();
 
 		// build the list of dot products
 		final int order = 16 * iteration;
@@ -863,7 +830,7 @@ public class DDSwriter {
 		}
 
 		// copy the ordering and weight all the points
-		final Vec[] points = colours.getPoints();
+		final DDSVec[] points = colours.getPoints();
 		final float[] cWeights = colours.getWeights();
 		xxSum.set(0.0f);
 
@@ -871,7 +838,7 @@ public class DDSwriter {
 			final int p = orders[order + i];
 
 			final float weight = cWeights[p];
-			final Vec point = points[p];
+			final DDSVec point = points[p];
 
 			weights[i] = weight;
 
@@ -888,8 +855,8 @@ public class DDSwriter {
 		return true;
 	}
 
-	private static float solveLeastSquares(final Vec start, final Vec end, int count,
-			float[] alpha, float[] beta, float[] weighted, Vec xxSum) {
+	private static float solveLeastSquares(final DDSVec start, final DDSVec end, int count,
+			float[] alpha, float[] beta, float[] weighted, DDSVec xxSum) {
 		float alpha2_sum = 0.0f;
 		float beta2_sum = 0.0f;
 		float alphabeta_sum = 0.0f;
@@ -1019,12 +986,12 @@ public class DDSwriter {
 
 		static Matrix computeWeightedCovariance(final ColourSet m_colours) {
 			final int count = m_colours.getCount();
-			final Vec[] points = m_colours.getPoints();
+			final DDSVec[] points = m_colours.getPoints();
 			final float[] weights = m_colours.getWeights();
 
-			final Vec centroid = new Vec();
-			final Vec a = new Vec();
-			final Vec b = new Vec();
+			final DDSVec centroid = new DDSVec();
+			final DDSVec a = new DDSVec();
+			final DDSVec b = new DDSVec();
 
 			// compute the centroid
 			float total = 0.0f;
@@ -1053,7 +1020,7 @@ public class DDSwriter {
 			return covariance;
 		}
 
-		private static Vec getMultiplicity1Evector(final Matrix matrix, final float evalue) {
+		private static DDSVec getMultiplicity1Evector(final Matrix matrix, final float evalue) {
 			final float[] values = matrix.values;
 
 			// compute M
@@ -1088,16 +1055,16 @@ public class DDSwriter {
 			// pick the column with this component
 			switch (mi) {
 			case 0:
-				return new Vec(u[0], u[1], u[2]);
+				return new DDSVec(u[0], u[1], u[2]);
 			case 1:
 			case 3:
-				return new Vec(u[1], u[3], u[4]);
+				return new DDSVec(u[1], u[3], u[4]);
 			default:
-				return new Vec(u[2], u[4], u[5]);
+				return new DDSVec(u[2], u[4], u[5]);
 			}
 		}
 
-		private static Vec getMultiplicity2Evector(final Matrix matrix, final float evalue) {
+		private static DDSVec getMultiplicity2Evector(final Matrix matrix, final float evalue) {
 			final float[] values = matrix.values;
 
 			// compute M
@@ -1124,18 +1091,18 @@ public class DDSwriter {
 			switch (mi) {
 			case 0:
 			case 1:
-				return new Vec(-m[1], m[0], 0.0f);
+				return new DDSVec(-m[1], m[0], 0.0f);
 			case 2:
-				return new Vec(m[2], 0.0f, -m[0]);
+				return new DDSVec(m[2], 0.0f, -m[0]);
 			case 3:
 			case 4:
-				return new Vec(0.0f, -m[4], m[3]);
+				return new DDSVec(0.0f, -m[4], m[3]);
 			default:
-				return new Vec(0.0f, -m[5], m[4]);
+				return new DDSVec(0.0f, -m[5], m[4]);
 			}
 		}
 
-		static Vec computePrincipleComponent(final Matrix matrix) {
+		static DDSVec computePrincipleComponent(final Matrix matrix) {
 			final float[] m = matrix.values;
 
 			// compute the cubic coefficients
@@ -1155,7 +1122,7 @@ public class DDSwriter {
 			if (FLT_EPSILON < Q) {
 				// only one root, which implies we have a multiple of the
 				// identity
-				return new Vec(1.0f);
+				return new DDSVec(1.0f);
 			} else if (Q < -FLT_EPSILON) {
 				// three distinct roots
 				final float theta = (float) Math.atan2(Math.sqrt(-Q), -0.5f * b);
@@ -1198,10 +1165,10 @@ public class DDSwriter {
 
 	}
 
-	public static void CompressorSingleColour(final ColourSet colours, final CompressionType type, final byte[] block, final int offset) {
+	public static void CompressorSingleColour(final ColourSet colours, final DDSCompressionType type, final byte[] block, final int offset) {
 
 		// grab the single colour
-		final Vec colour_ = colours.getPoints()[0];
+		final DDSVec colour_ = colours.getPoints()[0];
 		int[] colour = {
 				Math.round(255.0f * colour_.x()),
 				Math.round(255.0f * colour_.y()),
@@ -1212,11 +1179,11 @@ public class DDSwriter {
 		int[] globalBestErrorPtr = {Integer.MAX_VALUE};
 		
 		final int[] indices = new int[16];
-		final Vec start = new Vec();
-		final Vec end = new Vec();
+		final DDSVec start = new DDSVec();
+		final DDSVec end = new DDSVec();
 		final int[][] sources = new int[3][];
 		
-		if (type == CompressionType.DXT1) {
+		if (type == DDSCompressionType.DXT1) {
 			compress3Single(block, offset, indices, start, end, colours, colour, sources, globalBestErrorPtr);
 			if (!colours.isTransparent()) {
 				compress4Single(block, offset, indices, start, end, colours, colour, sources, globalBestErrorPtr);
@@ -1226,7 +1193,7 @@ public class DDSwriter {
 		}
 	}
 
-	static void compress3Single(final byte[] block, final int offset, int[] indices, Vec start, Vec end, ColourSet colours, int[] colour, int[][] sources, int[] globalBestErrorPtr) {
+	static void compress3Single(final byte[] block, final int offset, int[] indices, DDSVec start, DDSVec end, ColourSet colours, int[] colour, int[][] sources, int[] globalBestErrorPtr) {
 		// find the best end-points and index
 		int[] index = new int[1];
 		final int error = computeEndPointsSingle(3, DDSLookupTables.lookupsTable3, start, end, colour, sources, index, globalBestErrorPtr);
@@ -1243,7 +1210,7 @@ public class DDSwriter {
 		}
 	}
 
-	static void compress4Single(final byte[] block, final int offset, int[] indices, Vec start, Vec end, ColourSet colours, int[] colour, int[][] sources, int[] globalBestErrorPtr) {
+	static void compress4Single(final byte[] block, final int offset, int[] indices, DDSVec start, DDSVec end, ColourSet colours, int[] colour, int[][] sources, int[] globalBestErrorPtr) {
 		// find the best end-points and index
 		int[] index = new int[1];
 		final int error = computeEndPointsSingle(4, DDSLookupTables.lookupsTable4, start, end, colour, sources, index, globalBestErrorPtr);
@@ -1261,7 +1228,7 @@ public class DDSwriter {
 		}
 	}
 
-	private static int computeEndPointsSingle(final int count, final int[][][][] lookups, Vec start, Vec end, int[] colour, int[][] sources, int[] index2, int[] globalBestErrorPtr) {
+	private static int computeEndPointsSingle(final int count, final int[][][][] lookups, DDSVec start, DDSVec end, int[] colour, int[][] sources, int[] index2, int[] globalBestErrorPtr) {
 		final float GRID_X = 31.0f;
 		final float GRID_Y = 63.0f;
 		final float GRID_Z = 31.0f;
