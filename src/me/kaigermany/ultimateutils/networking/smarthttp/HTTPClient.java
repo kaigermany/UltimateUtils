@@ -236,7 +236,11 @@ public class HTTPClient {
 			
 			return returningResult;
 		} finally {//ensure instance will not end in a Zombie state
-			socket.setSoTimeout(DEFAULT_SOCKET_TIMEOUT);
+			if(socket.isClosed()) {
+				close();
+			} else {
+				socket.setSoTimeout(DEFAULT_SOCKET_TIMEOUT);
+			}
 			if(parent != null) parent.markInstanceAsUnused(this);
 		}
 	}
