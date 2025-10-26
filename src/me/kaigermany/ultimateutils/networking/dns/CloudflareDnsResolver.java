@@ -7,8 +7,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 
-public class CloudflareDnsResolver implements DnsResolver {
+import me.kaigermany.ultimateutils.StringUtils;
+
+public class CloudflareDnsResolver extends DnsResolver {
 	@Override
 	public InetAddress resolve(String hostname) throws UnknownHostException {
 		System.out.println("resolve('"+hostname+"')");
@@ -32,6 +35,28 @@ public class CloudflareDnsResolver implements DnsResolver {
 		}
 		return InetAddress.getByAddress(hostname, ipv4Bytes);
 	}
+	
+
+	
+	private static String runDnsRequest(String domain) throws UnknownHostException {
+		if(domain.indexOf('.') == -1){
+			throw new UnknownHostException("invalid dns name: " + domain);
+		}
+		
+		try{
+			@SuppressWarnings("deprecation")
+			String resp = new String(serverGet("https://1.1.1.1/dns-query?name=" + URLEncoder.encode(domain) + "&type=A"), StandardCharsets.UTF_8);
+			//resp = resp.split("\"Answer\"")[1].split("\"data\"")[1].split("\"")[1];
+			
+			//find location of Answer parameter
+			resp = resp.substring(resp.indexOf("\"Answer\""));
+			//extract data parameter
+			return StringUtils.splitAndKeepMiddle(resp, "\"data\":\"", "\"");
+		}catch(Exception e){
+			throw (UnknownHostException)new UnknownHostException(domain).initCause(e);
+		}
+	}
+	/*
 	
 	private static String runDnsRequest(String link) throws UnknownHostException {
 		if(link.indexOf('.') == -1){
@@ -77,4 +102,5 @@ public class CloudflareDnsResolver implements DnsResolver {
 			return null;
 		}
 	}
+	*/
 }

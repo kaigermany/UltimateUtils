@@ -5,7 +5,7 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CachedDNSResolver implements DnsResolver {
+public class CachedDNSResolver extends DnsResolver {
 	private Map<String, InetAddress> knownAddresses = new HashMap<String, InetAddress>();
 	private DnsResolver resolver;
 	
