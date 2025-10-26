@@ -17,13 +17,15 @@ public class StringUtils {
 	 */
 	public static String splitAndKeepMiddle(String in, String filterLeft, String filterRight) {
 		int pL = in.indexOf(filterLeft);
-		int pR = in.indexOf(filterRight, pL);
 		if (pL == -1) {
 			throw new IllegalArgumentException("Left-side filter missmatch");
-		} else if (pR == -1) {
+		}
+		pL += filterLeft.length();
+		int pR = in.indexOf(filterRight, pL);
+		if (pR == -1) {
 			throw new IllegalArgumentException("Right-side filter missmatch");
 		}
-		return in.substring(pL + filterLeft.length(), pR);
+		return in.substring(pL, pR);
 	}
 	
 	/**
