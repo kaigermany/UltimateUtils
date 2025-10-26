@@ -8,14 +8,16 @@ import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 
-public class GoogleDnsResolver implements DnsResolver {
-
+public class CloudflareDnsResolver implements DnsResolver {
 	@Override
 	public InetAddress resolve(String hostname) throws UnknownHostException {
-		
+		System.out.println("resolve('"+hostname+"')");
 		//hardcoded self-resolving.
-		if (hostname.equals("dns.google.com")) {
-			return InetAddress.getByAddress(hostname, new byte[]{8, 8, 4, 4});
+		if (hostname.equals("cloudflare-dns.com")) {
+			return InetAddress.getByAddress(hostname, new byte[]{1, 1, 1, 1});
+		}
+		if (hostname.equals("one.one.one.one")) {
+			return InetAddress.getByAddress(hostname, new byte[]{1, 1, 1, 1});
 		}
 		if (hostname.equals("localhost")) {
 			return InetAddress.getByAddress(hostname, new byte[]{127, 0, 0, 1});
@@ -23,7 +25,7 @@ public class GoogleDnsResolver implements DnsResolver {
 		
 		String ipText = runDnsRequest(hostname);
 		System.out.println(hostname + " -> " + ipText);
-		byte[] ipv4Bytes = textToNumericFormatV4(ipText);
+		byte[] ipv4Bytes = GoogleDnsResolver.textToNumericFormatV4(ipText);
 		//System.out.println("ipv4Bytes = " + Arrays.toString(ipv4Bytes));
 		if(ipv4Bytes == null) {
 			return resolve(ipText);
@@ -35,9 +37,10 @@ public class GoogleDnsResolver implements DnsResolver {
 		if(link.indexOf('.') == -1){
 			throw new UnknownHostException("invalid dns name: " + link);
 		}
-		
+		//alternative: "https://cloudflare-dns.com/dns-query?name="...
 		@SuppressWarnings("deprecation")
-		String resp = new String(serverGet("https://dns.google.com/resolve?name=" + URLEncoder.encode(link) + "&type=A"));
+		String resp = new String(GoogleDnsResolver.serverGet("https://1.1.1.1/dns-query?name=" + URLEncoder.encode(link) + "&type=A"));
+		
 		//resp = resp.split("\"Answer\"")[1].split("\"data\"\\:\"")[1].split("\"")[0];
 		resp = resp.split("\"Answer\"")[1].split("\"data\"")[1].split("\"")[1];
 		//System.out.println(resp);
@@ -49,13 +52,13 @@ public class GoogleDnsResolver implements DnsResolver {
 			URL url = new URL(a);
 			URLConnection conn = (URLConnection) url.openConnection();
 			//conn.setRequestMethod("GET");
-			conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
+			//conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
 			//conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:63.0) Gecko/20100101 Firefox/63.0");
 			conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:75.0) Gecko/20100101 Firefox/75.0");
 			conn.setRequestProperty("Accept", "application/dns-json");
-			conn.setRequestProperty("Host", "dns.google.com");
+			//conn.setRequestProperty("Host", "1.1.1.1");
 
-			conn.setRequestProperty("Accept-Language", "de,en-US;q=0.7,en;q=0.3");
+			//conn.setRequestProperty("Accept-Language", "de,en-US;q=0.7,en;q=0.3");
 			BufferedInputStream bis = new BufferedInputStream(conn.getInputStream());
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			int chr = -1;
@@ -73,53 +76,5 @@ public class GoogleDnsResolver implements DnsResolver {
 			e.printStackTrace();
 			return null;
 		}
-	}
-	
-	public static byte[] textToNumericFormatV4(String src) { //src: sun.net.util.IPAddressUtil
-		byte[] res = new byte[4];
-
-		long tmpValue = 0;
-		int currByte = 0;
-		boolean newOctet = true;
-
-		int len = src.length();
-		if (len == 0 || len > 15) {
-			return null;
-		}
-		for (int i = 0; i < len; i++) {
-			char c = src.charAt(i);
-			if (c == '.') {
-				if (newOctet || tmpValue < 0 || tmpValue > 0xff || currByte == 3) {
-					return null;
-				}
-				res[currByte++] = (byte) (tmpValue & 0xff);
-				tmpValue = 0;
-				newOctet = true;
-			} else {
-				int digit = c - '0';
-
-				if (digit < 0 || digit >= 10) {
-					return null;
-				}
-
-				tmpValue *= 10;
-				tmpValue += digit;
-				newOctet = false;
-			}
-		}
-		if (newOctet || tmpValue < 0 || tmpValue >= (1L << ((4 - currByte) * 8))) {
-			return null;
-		}
-		switch (currByte) {
-			case 0:
-				res[0] = (byte) ((tmpValue >> 24) & 0xff);
-			case 1:
-				res[1] = (byte) ((tmpValue >> 16) & 0xff);
-			case 2:
-				res[2] = (byte) ((tmpValue >>  8) & 0xff);
-			case 3:
-				res[3] = (byte) (tmpValue & 0xff);
-		}
-		return res;
 	}
 }
