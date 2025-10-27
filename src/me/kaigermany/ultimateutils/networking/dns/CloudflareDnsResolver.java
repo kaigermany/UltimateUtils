@@ -4,7 +4,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 
-import me.kaigermany.ultimateutils.StringUtils;
+import me.kaigermany.ultimateutils.data.json.JSONObject;
 
 public class CloudflareDnsResolver extends DnsResolver {
 	@Override
@@ -20,28 +20,27 @@ public class CloudflareDnsResolver extends DnsResolver {
 			return InetAddress.getByAddress(hostname, new byte[]{127, 0, 0, 1});
 		}
 		
-		String ipText = runDnsRequest(hostname);
-		byte[] ipv4Bytes = textToNumericFormatV4(ipText);
-		if(ipv4Bytes == null) {
-			return resolve(ipText);
-		}
-		return InetAddress.getByAddress(hostname, ipv4Bytes);
+		return runDnsRequest(hostname);
 	}
 	
-	private static String runDnsRequest(String domain) throws UnknownHostException {
-		if(domain.indexOf('.') == -1){
-			throw new UnknownHostException("invalid dns name: " + domain);
+	private InetAddress runDnsRequest(String hostname) throws UnknownHostException {
+		if(hostname.indexOf('.') == -1){
+			throw new UnknownHostException("invalid hostname: " + hostname);
 		}
 		
 		try{
-			String resp = new String(serverGet("https://1.1.1.1/dns-query?name=" + encodeUrl(domain) + "&type=A"), StandardCharsets.UTF_8);
+			String resp = new String(serverGet("https://1.1.1.1/dns-query?name=" + encodeUrl(hostname) + "&type=A"), StandardCharsets.UTF_8);
 			
-			//find location of Answer parameter
-			resp = resp.substring(resp.indexOf("\"Answer\""));
-			//extract data parameter
-			return StringUtils.splitAndKeepMiddle(resp, "\"data\":\"", "\"");
+			String ipText = JSONObject.parse(resp).getJSONArray("Answer").getJSONObject(0).getString("data");
+			byte[] ipv4Bytes = textToNumericFormatV4(ipText);
+			
+			if(ipv4Bytes == null){//not a IP? than its a domain-pointer.
+				return resolve(ipText);
+			}
+			
+			return InetAddress.getByAddress(hostname, ipv4Bytes);
 		}catch(Exception e){
-			throw (UnknownHostException)new UnknownHostException(domain).initCause(e);
+			throw (UnknownHostException)new UnknownHostException(hostname).initCause(e);
 		}
 	}
 }
