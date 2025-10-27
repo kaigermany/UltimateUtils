@@ -74,7 +74,7 @@ public class WebSocketServer extends WebSocketBasic {
 			}
 		} while (r.length() >= 4);
 
-		sendResponceKey(key);
+		sendResponseKey(key);
 	}
 
 	/**
@@ -88,14 +88,14 @@ public class WebSocketServer extends WebSocketBasic {
 			throw new IllegalStateException("Websocket header has no Sec-WebSocket-Key Header");
 		}
 
-		sendResponceKey(key);
+		sendResponseKey(key);
 	}
 	
 	/*
 	 * Converts the given key and submit the generated response.
 	 * @throws IOException if write fails.
 	 */
-	protected void sendResponceKey(String key) throws IOException {
+	protected void sendResponseKey(String key) throws IOException {
 		key = calculateResponseSecret(key);
 		dos.write(("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: " + key + "\r\n\r\n").getBytes());
 		dos.flush();
