@@ -9,6 +9,7 @@ import java.net.Proxy;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
@@ -74,7 +75,7 @@ public class HTTPClient {
 			for(Entry<String, String> e : headerFields.entrySet()){
 				sb.append(e.getKey()).append(": ").append(e.getValue()).append("\r\n");
 			}
-			os.write(sb.append("\r\n").toString().getBytes());
+			os.write(sb.append("\r\n").toString().getBytes(StandardCharsets.UTF_8));
 			if(postData != null){
 				os.write(postData);
 			}
@@ -315,15 +316,15 @@ public class HTTPClient {
 	}
 
 	private static String readLine(InputStream is) throws IOException {
-		StringBuilder sb = new StringBuilder();
+		ByteArrayOutputStream baos = new ByteArrayOutputStream(256);
 		int chr;
 		while((chr = is.read()) != -1 && chr != '\n'){
-			sb.append((char)chr);
+			baos.write(chr);
 		}
-		String s = sb.toString();
-		if(s.length() == 0) return s;
-		if(s.charAt(s.length() - 1) == '\r') return s.substring(0, s.length() - 1);
-		return s;
+		byte[] data = baos.toByteArray();
+		int len = data.length;
+		if(len > 0 && data[len - 1] == '\r') len--;
+		return new String(data, 0, len, StandardCharsets.UTF_8);
 	}
 	/*
 	public boolean isClosed(){

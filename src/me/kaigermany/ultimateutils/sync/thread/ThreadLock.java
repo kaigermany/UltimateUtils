@@ -1,7 +1,7 @@
 package me.kaigermany.ultimateutils.sync.thread;
 
 import java.util.ArrayList;
-//TODO still require some testing...
+
 public class ThreadLock {
 	private volatile boolean lock = false;
 	private volatile ArrayList<Thread> lockedThreads = new ArrayList<Thread>();
