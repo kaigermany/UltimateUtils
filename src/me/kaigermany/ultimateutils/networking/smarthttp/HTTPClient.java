@@ -71,15 +71,20 @@ public class HTTPClient {
 			
 			socket.setSoTimeout(timeout);
 			
+			//build HTTP header
 			StringBuilder sb = new StringBuilder(requestMethod).append(' ').append(page).append(" HTTP/1.1\r\n");
-			for(Entry<String, String> e : headerFields.entrySet()){
+			for(Entry<String, String> e : headers.entrySet()){
 				sb.append(e.getKey()).append(": ").append(e.getValue()).append("\r\n");
 			}
+			headers = null;
+			
 			os.write(sb.append("\r\n").toString().getBytes(StandardCharsets.UTF_8));
 			if(postData != null){
+				//submit body if exists
 				os.write(postData);
 			}
 			os.flush();
+			sb = null;
 			
 			String len = null;
 			int responseCode;
@@ -330,11 +335,7 @@ public class HTTPClient {
 		if(len > 0 && data[len - 1] == '\r') len--;
 		return new String(data, 0, len, StandardCharsets.UTF_8);
 	}
-	/*
-	public boolean isClosed(){
-		return socket.isClosed();
-	}
-	*/
+	
 	@Override
 	protected void finalize() throws Throwable {
 		//this.close();

@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 public class UnknownResourceInjector9 {
+	@SuppressWarnings("unchecked")
 	public static void injectForJava9() throws Exception {
 		System.out.println("init:injectForJava9");
 		HashSet<Object> knownModuleDescriptors = new HashSet<>(256);
@@ -272,6 +273,7 @@ public class UnknownResourceInjector9 {
 			});
 		}
 		return Proxy.newProxyInstance(/*UnknownResourceInjector9.class.getClassLoader()*/mr.getClassLoader(), new Class[]{mr}, new InvocationHandler() {
+			@SuppressWarnings("unchecked")
 			@Override
 			public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 				
