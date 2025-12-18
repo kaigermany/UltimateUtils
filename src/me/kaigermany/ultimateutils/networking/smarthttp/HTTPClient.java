@@ -240,7 +240,11 @@ public class HTTPClient {
 			if(socket.isClosed()) {
 				close();
 			} else {
-				socket.setSoTimeout(DEFAULT_SOCKET_TIMEOUT);
+				try{
+					socket.setSoTimeout(DEFAULT_SOCKET_TIMEOUT);
+				}catch(SocketException se){
+					close();
+				}
 			}
 			if(parent != null) parent.markInstanceAsUnused(this);
 		}
