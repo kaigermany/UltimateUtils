@@ -56,17 +56,19 @@ public class HTTPClient {
 			resetAge();
 			if(page == null || page.length() == 0 || page.charAt(0) != '/') page = "/" + (page == null ? "" : page);
 			if(requestMethod == null) requestMethod = "GET";
-			if(headerFields == null) headerFields = new HashMap<String, String>();
-			if(!noDefaultHeader){
-				for(Entry<String, String> e : DEFAULT_HEADER.entrySet()){
-					if(headerFields.containsKey(e.getKey())) continue;
-					headerFields.put(e.getKey(), e.getValue());
-				}
+			
+			//merge headers:
+			HashMap<String, String> headers = new HashMap<String, String>(32);
+			if(!noDefaultHeader) {
+				headers.putAll(DEFAULT_HEADER);
 			}
-			headerFields.putIfAbsent("Host", host);
+			if(headerFields != null) {
+				headers.putAll(headerFields);
+			}
+			headers.putIfAbsent("Host", host);
 			
 			if(postData != null){
-				headerFields.put("Content-Length", String.valueOf(postData.length));
+				headers.put("Content-Length", String.valueOf(postData.length));
 			}
 			
 			socket.setSoTimeout(timeout);
