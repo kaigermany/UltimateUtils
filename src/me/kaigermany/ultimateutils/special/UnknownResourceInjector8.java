@@ -2,12 +2,11 @@ package me.kaigermany.ultimateutils.special;
 
 import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 
 public class UnknownResourceInjector8 {
-	public static void injectForJava8() throws MalformedURLException, NoSuchMethodException, SecurityException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchFieldException{
+	public static void injectForJava8() throws SecurityException, IllegalArgumentException, IllegalAccessException {
 		ClassLoader system = ClassLoader.getSystemClassLoader();
 		Field parentClassLoader = null;
 		try {
