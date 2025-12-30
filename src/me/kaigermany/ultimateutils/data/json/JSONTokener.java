@@ -37,7 +37,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class JSONTokener {
@@ -86,18 +90,18 @@ public class JSONTokener {
 			this.index++;
 			return this.previous;
 		}
-		
+
 		try {
 			int c = this.reader.read();
-			
+
 			if (c < 0) { // End of stream
 				this.eof = true;
 				c = 0;
 			}
-			
+
 			this.index++;
 			return (this.previous = (char) c);
-			
+
 		} catch (IOException exception) {
 			throw new IllegalStateException(exception);
 		}
@@ -140,39 +144,39 @@ public class JSONTokener {
 				case '\\':
 					c = this.next();
 					switch (c) {
-					case 'b':
-						sb.append('\b');
-						break;
-					case 't':
-						sb.append('\t');
-						break;
-					case 'n':
-						sb.append('\n');
-						break;
-					case 'f':
-						sb.append('\f');
-						break;
-					case 'r':
-						sb.append('\r');
-						break;
-					case 'u':
-						sb.append((char) Integer.parseInt(this.next(4), 16));
-						break;
-					case '"':
-					case '\'':
-					case '\\':
-					case '/':
-						sb.append(c);
+						case 'b':
+							sb.append('\b');
+							break;
+						case 't':
+							sb.append('\t');
+							break;
+						case 'n':
+							sb.append('\n');
+							break;
+						case 'f':
+							sb.append('\f');
+							break;
+						case 'r':
+							sb.append('\r');
+							break;
+						case 'u':
+							sb.append((char) Integer.parseInt(this.next(4), 16));
+							break;
+						case '"':
+						case '\'':
+						case '\\':
+						case '/':
+							sb.append(c);
+							break;
+						default:
+							throw new RuntimeException("Illegal escape.");
+						}
 						break;
 					default:
-						throw new RuntimeException("Illegal escape.");
-					}
-					break;
-				default:
-					if (c == quote) {
-						return deduplicate(sb.toString());
-					}
-					sb.append(c);
+						if (c == quote) {
+							return deduplicate(sb.toString());
+						}
+						sb.append(c);
 			}
 		}
 	}
@@ -239,7 +243,7 @@ public class JSONTokener {
 		}
 		return string;
 	}
-	
+
 	@Override
 	public String toString() {
 		return "";
@@ -254,7 +258,7 @@ public class JSONTokener {
 		deduplicationMap.put(obj, obj);
 		return obj;
 	}
-	
+
 	public static void testValidity(Object o) {
 		if (o != null) {
 			if (o instanceof Double) {
@@ -267,5 +271,192 @@ public class JSONTokener {
 				}
 			}
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	static final Writer writeValue(StringWriter writer, Object value, int indentFactor, int indent) {
+		if (value == null || value.equals(null)) {
+			writer.write("null");
+		} else if (value instanceof JSONObject) {
+			writeInternal(((JSONObject) value), writer, indentFactor, indent);
+		} else if (value instanceof JSONArray) {
+			writeInternal(((JSONArray) value), writer, indentFactor, indent);
+		} else if (value instanceof Map) {
+			writeInternal(new JSONObject((Map<String, Object>) value), writer, indentFactor, indent);
+		} else if (value instanceof Collection) {
+			writeInternal(new JSONArray(value), writer, indentFactor, indent);
+		} else if (value.getClass().isArray()) {
+			writeInternal(new JSONArray(value), writer, indentFactor, indent);
+		} else if (value instanceof Number) {
+			writer.write(numberToString((Number) value));
+		} else if (value instanceof Boolean) {
+			writer.write(value.toString());
+		} else {
+			quote(value.toString(), writer);
+		}
+		return writer;
+	}
+
+	public static void writeInternal(JSONObject object, StringWriter writer, int indentFactor, int indent) {
+		boolean commanate = false;
+		final int length = object.size();
+		Iterator<String> keys = object.iterator();
+		writer.write('{');
+
+		int actualFactor = (indentFactor == -1) ? 0 : indentFactor;
+
+		if (length == 1) {
+			String key = keys.next();
+			writer.write(quote(key));
+			writer.write(':');
+			if (actualFactor > 0) {
+				writer.write(' ');
+			}
+			// writeValue(writer, this.map.get(key), actualFactor, indent);
+			writeValue(writer, object.get(key), indentFactor, indent);
+		} else if (length != 0) {
+			final int newIndent = indent + actualFactor;
+			while (keys.hasNext()) {
+				String key = keys.next();
+				if (commanate) {
+					writer.write(',');
+				}
+				if (indentFactor != -1) {
+					writer.write('\n');
+				}
+				indent(writer, newIndent);
+				writer.write(quote(key));
+				writer.write(':');
+				if (actualFactor > 0) {
+					writer.write(' ');
+				}
+				// writeValue(writer, this.map.get(key), actualFactor, newIndent);
+				writeValue(writer, object.get(key), indentFactor, newIndent);
+				commanate = true;
+			}
+			if (indentFactor != -1) {
+				writer.write('\n');
+			}
+			indent(writer, indent);
+		}
+		writer.write('}');
+		return;
+	}
+
+	public static void writeInternal(JSONArray myArrayList, StringWriter writer, int indentFactor, int indent) {
+		boolean commanate = false;
+		int length = myArrayList.size();
+		writer.write('[');
+
+		if (length == 1) {
+			JSONTokener.writeValue(writer, myArrayList.get(0), indentFactor, indent);
+		} else if (length != 0) {
+			final int newIndent = indent + indentFactor;
+
+			for (int i = 0; i < length; i += 1) {
+				if (commanate) {
+					writer.write(',');
+				}
+				if (indentFactor != 0) {
+					writer.write('\n');
+				}
+				JSONTokener.indent(writer, newIndent);
+				JSONTokener.writeValue(writer, myArrayList.get(i), indentFactor, newIndent);
+				commanate = true;
+			}
+			if (indentFactor != 0) {
+				writer.write('\n');
+			}
+			JSONTokener.indent(writer, indent);
+		}
+		writer.write(']');
+		return;
+	}
+
+	static String quote(String string) {
+		StringWriter sw = new StringWriter();
+		synchronized (sw.getBuffer()) {
+			quote(string, sw);
+		}
+		return sw.toString();
+	}
+
+	public static void quote(String string, StringWriter w) {
+		if (string == null || string.length() == 0) {
+			w.write("\"\"");
+			return;
+		}
+		char b;
+		char c = 0;
+		String hhhh;
+		int i;
+		int len = string.length();
+
+		w.write('"');
+		for (i = 0; i < len; i += 1) {
+			b = c;
+			c = string.charAt(i);
+			switch (c) {
+				case '\\':
+				case '"':
+					w.write('\\');
+					w.write(c);
+					break;
+				case '/':
+					if (b == '<') {
+						w.write('\\');
+					}
+					w.write(c);
+					break;
+				case '\b':
+					w.write("\\b");
+					break;
+				case '\t':
+					w.write("\\t");
+					break;
+				case '\n':
+					w.write("\\n");
+					break;
+				case '\f':
+					w.write("\\f");
+					break;
+				case '\r':
+					w.write("\\r");
+					break;
+				default:
+					if (c < ' ' || (c >= '\u0080' && c < '\u00a0') || (c >= '\u2000' && c < '\u2100')) {
+						w.write("\\u");
+						hhhh = Integer.toHexString(c);
+						w.write("0000", 0, 4 - hhhh.length());
+						w.write(hhhh);
+					} else {
+						w.write(c);
+					}
+			}
+		}
+		w.write('"');
+	}
+
+	public static final void indent(StringWriter writer, int indent) {
+		for (int i = 0; i < indent; i += 1) {
+			writer.write(' ');
+		}
+	}
+
+	private static String numberToString(Number number) {
+		if (number == null) {
+			throw new IllegalArgumentException("Null pointer");
+		}
+		JSONTokener.testValidity(number);
+		String string = number.toString();
+		if (string.indexOf('.') > 0 && string.indexOf('e') < 0 && string.indexOf('E') < 0) {
+			while (string.endsWith("0")) {
+				string = string.substring(0, string.length() - 1);
+			}
+			if (string.endsWith(".")) {
+				string = string.substring(0, string.length() - 1);
+			}
+		}
+		return string;
 	}
 }
