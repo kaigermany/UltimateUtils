@@ -32,7 +32,7 @@ public abstract class WebSocketBasic {
 		this.isServer = isServer;
 	}
 
-	public WebSocketBasic(InputStream is, OutputStream os, WebSocketEvent event, boolean isServer) throws IOException {
+	public WebSocketBasic(InputStream is, OutputStream os, WebSocketEvent event, boolean isServer) {
 		dis = is instanceof DataInputStream ? (DataInputStream) is : new DataInputStream(is);
 		dos = os instanceof DataOutputStream ? (DataOutputStream) os : new DataOutputStream(os);
 		this.event = event;
@@ -325,7 +325,7 @@ public abstract class WebSocketBasic {
 		} else if (len == 127) {
 			long len_long = dis.readLong();
 			len = (int)(len_long & 0x7FFFFFFFL);
-			if(len_long != (long)len) {
+			if(len_long != len) {
 				throw new IOException("packet is too long for this implementation! Maximum supported is 2GB of data caused by the limits of 'new byte[len]'.");
 			}
 		}
