@@ -9,10 +9,12 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class CoProcessor {
-	private static final int numThreads = Runtime.getRuntime().availableProcessors();
-	private static final ThreadWorker[] cpu = new ThreadWorker[numThreads];
-	private static final LinkedBlockingQueue<AsyncRunnable> queueBuffer = new LinkedBlockingQueue<>();
-	private static final ProcessorQueue queue = new ProcessorQueue(new Iterator<AsyncRunnable>() {
+	private static CoProcessor globalInstance = null;
+	
+	private final int numThreads;
+	private final ThreadWorker[] cpu;
+	private final LinkedBlockingQueue<AsyncRunnable> queueBuffer = new LinkedBlockingQueue<>();
+	private final ProcessorQueue queue = new ProcessorQueue(new Iterator<AsyncRunnable>() {
 		@Override
 		public AsyncRunnable next() {
 			AsyncRunnable instance;
@@ -32,12 +34,25 @@ public class CoProcessor {
 		}
 	});
 	private static final String threadNamePrefix = "CoProcessor_";
-	
+
 	public static CoProcessor getInstance(){
+		CoProcessor instance;
+		synchronized (CoProcessor.class) {
+			instance = globalInstance;
+			if(instance == null){
+				instance = globalInstance = new CoProcessor();
+			}
+		}
+		return instance;
+	}
+	public static CoProcessor createInstance(){
 		return new CoProcessor();
 	}
+	public static CoProcessor createInstance(int numWorkerThreads){
+		return new CoProcessor(numWorkerThreads);
+	}
 	
-	private static void triggerStart(){
+	private void triggerStart(){
 		for(int i=0; i<numThreads; i++){
 			if(cpu[i] == null) cpu[i] = new ThreadWorker(queue, threadNamePrefix + i);
 			cpu[i].notifyStart();
@@ -46,8 +61,15 @@ public class CoProcessor {
 	
 	private HashSet<AsyncRunnable> activeJobs = new HashSet<>();
 	private ThreadLock awaitLock = new ThreadLock();
-	
-	private CoProcessor(){}
+
+	private CoProcessor(){
+		this.numThreads = Runtime.getRuntime().availableProcessors();
+		this.cpu = new ThreadWorker[numThreads];
+	}
+	private CoProcessor(int numThreads){
+		this.numThreads = numThreads;
+		this.cpu = new ThreadWorker[numThreads];
+	}
 	
 	public void awaitAllJobs(){
 		awaitLock.enterBlock();
