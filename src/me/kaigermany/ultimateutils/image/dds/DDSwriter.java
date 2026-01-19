@@ -384,9 +384,7 @@ public class DDSwriter {
 							// copy the rgba value
 							int sourcePixel = 4 * (width * sy + sx);
 							for (int i = 0; i < 4; ++i) {
-								// int b = (byte) (rgba[sourcePixel++] & 0xFF);
-								// System.out.println(b);
-								sourceRGBA[targetPixel++] = (byte) rgba[sourcePixel++];
+								sourceRGBA[targetPixel++] = rgba[sourcePixel++];
 							}
 
 							// enable this pixel
