@@ -12,8 +12,7 @@ public abstract class FilteringRequestConsumer implements RequestConsumer {
 		if(!patternMatchPath(requestPath)){
 			return false;
 		}
-		handle(requestMethod, requestPath, requestHeaders, is, os);
-		return true;
+		return handle(requestMethod, requestPath, requestHeaders, is, os);
 	}
 	
 	private final boolean patternMatchPath(String filter){
@@ -40,6 +39,6 @@ public abstract class FilteringRequestConsumer implements RequestConsumer {
 	
 	public abstract String getPathFilter();
 
-	public abstract void handle(String requestMethod, String requestPath,
+	public abstract boolean handle(String requestMethod, String requestPath,
 			Map<String, List<String>> requestHeaders, InputStream is, OutputStream os);
 }

@@ -97,10 +97,16 @@ public class HttpServer {
 				this.is = this.socket.getInputStream();
 				this.os = this.socket.getOutputStream();
 				readHeader();
+				boolean success = false;
 				for(RequestConsumer handler : listener){
-					if(handler.accept(requestMethod, requestPath, requestProtocolVersion, requestHeaders, is, os)){
+					if(success |= handler.accept(requestMethod, requestPath, requestProtocolVersion, requestHeaders, is, os)){
 						break;
 					}
+				}
+				if(!success){
+					this.os.write("HTTP/1.0 404 NOT FOUND\r\nConnection: Close\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+					this.os.flush();
+					this.socket.close();
 				}
 			}catch(Throwable anyError){
 				anyError.printStackTrace();
