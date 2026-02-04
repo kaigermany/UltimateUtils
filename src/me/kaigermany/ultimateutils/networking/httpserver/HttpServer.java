@@ -22,7 +22,7 @@ public class HttpServer {
 	private volatile boolean alive = true;
 	private final ThreadLock shutdownLock = new ThreadLock();
 	private LinkedList<RequestConsumer> listener = new LinkedList<RequestConsumer>();
-	private int threadPriority;
+	private int threadPriority = Thread.NORM_PRIORITY;
 	private final Thread serverThread;
 	
 	public HttpServer(int port) throws IOException {
@@ -94,8 +94,8 @@ public class HttpServer {
 		@Override
 		public void run() {
 			try{
-				is = this.socket.getInputStream();
-				os = this.socket.getOutputStream();
+				this.is = this.socket.getInputStream();
+				this.os = this.socket.getOutputStream();
 				readHeader();
 				for(RequestConsumer handler : listener){
 					if(handler.accept(requestMethod, requestPath, requestProtocolVersion, requestHeaders, is, os)){
