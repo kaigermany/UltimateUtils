@@ -89,7 +89,7 @@ public class JSONArray {
 				this.add(JSONObject.wrap(Array.get(array, i)));
 			}
 		} else {
-			throw new RuntimeException("JSONArray initial value should be a string or collection or array.");
+			throw new IllegalArgumentException("JSONArray initial value should be a String, Collection or Array.");
 		}
 	}
 
@@ -102,7 +102,7 @@ public class JSONArray {
 		if (object instanceof String) {
 			return (String) object;
 		}
-		throw new RuntimeException("JSONArray[" + index + "] is not a string.");
+		throw new IllegalArgumentException("JSONArray[" + index + "] is not a String: " + typeOf(object));
 	}
 
 	public String getString(int index, String defaultValue) {
@@ -125,7 +125,7 @@ public class JSONArray {
 		if (object instanceof Number) {
 			return ((Number) object).longValue();
 		}
-		throw new IllegalArgumentException("JSONArray[" + index + "] is not a number.");
+		throw new IllegalArgumentException("JSONArray[" + index + "] is not a Number: " + typeOf(object));
 	}
 
 	public long getLong(int index, long defaultValue) {
@@ -148,7 +148,7 @@ public class JSONArray {
 		if (object instanceof Number) {
 			return ((Number) object).doubleValue();
 		}
-		throw new IllegalArgumentException("JSONArray[" + index + "] is not a number.");
+		throw new IllegalArgumentException("JSONArray[" + index + "] is not a Number: " + typeOf(object));
 
 	}
 
@@ -164,7 +164,7 @@ public class JSONArray {
 		if (object instanceof Boolean) {
 			return ((Boolean) object).booleanValue();
 		}
-		throw new RuntimeException("JSONArray[" + index + "] is not a boolean.");
+		throw new IllegalArgumentException("JSONArray[" + index + "] is not a boolean: " + typeOf(object));
 	}
 
 	public boolean getBoolean(int index, boolean defaultValue) {
@@ -179,7 +179,7 @@ public class JSONArray {
 		if (object instanceof JSONArray) {
 			return (JSONArray) object;
 		}
-		throw new RuntimeException("JSONArray[" + index + "] is not a JSONArray.");
+		throw new IllegalArgumentException("JSONArray[" + index + "] is not a JSONArray: " + typeOf(object));
 	}
 
 	public JSONArray getJSONArray(int index, JSONArray defaultValue) {
@@ -194,7 +194,7 @@ public class JSONArray {
 		if (object instanceof JSONObject) {
 			return (JSONObject) object;
 		}
-		throw new RuntimeException("JSONArray[" + index + "] is not a JSONObject.");
+		throw new IllegalArgumentException("JSONArray[" + index + "] is not a JSONObject: " + typeOf(object));
 	}
 
 	public JSONObject getJSONObject(int index, JSONObject defaultValue) {
@@ -291,7 +291,7 @@ public class JSONArray {
 
 	public JSONArray set(int index, Object value) {
 		if (index < 0) {
-			throw new IllegalArgumentException("JSONArray[" + index + "] not found.");
+			throw new IllegalArgumentException("JSONArray[" + index + "] is invalid!");
 		}
 		JSONTokener.testValidity(value);
 		if (index < myArrayList.size()) {
@@ -328,5 +328,10 @@ public class JSONArray {
 			JSONTokener.writeInternal(this, sw, indentFactor, 0);
 		}
 		return sw.toString();
+	}
+	
+	private static String typeOf(Object obj){
+		if(obj == null) return "null";
+		return obj.getClass().getSimpleName();
 	}
 }

@@ -125,7 +125,7 @@ public class JSONObject {
 		if (object instanceof String) {
 			return (String) object;
 		}
-		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a string");
+		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a String: " + typeOf(object));
 	}
 
 	public String getString(String key, String defaultValue) {
@@ -144,7 +144,7 @@ public class JSONObject {
 		if (object instanceof Number) {
 			return ((Number) object).longValue();
 		}
-		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a number.");
+		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a number: " + typeOf(object));
 	}
 
 	public float getFloat(String key) {
@@ -156,7 +156,7 @@ public class JSONObject {
 		if (object instanceof Number) {
 			return ((Number) object).doubleValue();
 		}
-		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a number.");
+		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a number: " + typeOf(object));
 	}
 
 	public boolean getBoolean(String key) {
@@ -164,7 +164,7 @@ public class JSONObject {
 		if (object instanceof Boolean) {
 			return ((Boolean) object).booleanValue();
 		}
-		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a boolean.");
+		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a boolean: " + typeOf(object));
 	}
 
 	public JSONArray getJSONArray(String key) {
@@ -172,7 +172,7 @@ public class JSONObject {
 		if (object instanceof JSONArray) {
 			return (JSONArray) object;
 		}
-		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a JSONArray.");
+		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a JSONArray: " + typeOf(object));
 	}
 
 	public JSONObject getJSONObject(String key) {
@@ -180,7 +180,7 @@ public class JSONObject {
 		if (object instanceof JSONObject) {
 			return (JSONObject) object;
 		}
-		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a JSONObject.");
+		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a JSONObject: " + typeOf(object));
 	}
 
 	public boolean containsKey(String key) {
@@ -305,5 +305,10 @@ public class JSONObject {
 		} catch (Exception exception) {
 			return null;
 		}
+	}
+	
+	private static String typeOf(Object obj){
+		if(obj == null) return "null";
+		return obj.getClass().getSimpleName();
 	}
 }
