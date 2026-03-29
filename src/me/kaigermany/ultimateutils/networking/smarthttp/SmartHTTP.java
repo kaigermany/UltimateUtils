@@ -131,6 +131,7 @@ public class SmartHTTP {
 		String searchKey = server + "&" + port + "&" + ssl + "&" + disableCertificateCheck + "&" + proxy;
 		//long printTimeout = (30 * 1000) / 50;
 		while(true){
+			/*
 			synchronized (clients) {
 				HTTPServerGroup group = clients.computeIfAbsent(searchKey, k->new HTTPServerGroup());
 				if(group.getNumActiveConnections() < maxSocketCount){
@@ -141,7 +142,18 @@ public class SmartHTTP {
 					}
 				}
 			}
-			
+			*/
+			HTTPServerGroup group;
+			synchronized (clients) {
+				group = clients.computeIfAbsent(searchKey, k->new HTTPServerGroup());
+			}
+			if(group.getNumActiveConnections() < maxSocketCount){
+				HTTPClient clientInstance = group.getOrCreateClient(server, port, ssl, disableCertificateCheck, proxy);
+				if(clientInstance != null){
+					tryStartWatchDog();
+					return clientInstance;
+				}
+			}
 			sleep(50);
 			/*
 			printTimeout--;
