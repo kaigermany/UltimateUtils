@@ -144,7 +144,7 @@ public class StaticUtils {
 		};
 	}
 	
-	public static Iterable<Map.Entry<ZipEntry, byte[]>> zipIterator(InputStream is) throws IOException {
+	public static Iterable<Map.Entry<ZipEntry, byte[]>> zipIterator(InputStream is) {
 		final ZipInputStream zis = new ZipInputStream(new BufferedInputStream(is, 1 << 20));
 		return new Iterable<Map.Entry<ZipEntry, byte[]>>(){
 			@Override
