@@ -1,7 +1,6 @@
 package me.kaigermany.ultimateutils.sync.thread;
 
 import java.util.Iterator;
-import java.util.function.Consumer;
 
 public class ProcessorQueue {
 	private ThreadLock awaitLock = new ThreadLock();
@@ -12,15 +11,17 @@ public class ProcessorQueue {
 		awaitLock.lock();
 	}
 	
-	public void poll(Consumer<AsyncRunnable> feedMeCallback){
-		boolean empty;
+	public AsyncRunnable poll(){
+		AsyncRunnable runnable = null;
 		synchronized (queue) {
-			empty = !queue.hasNext();
-			feedMeCallback.accept(empty ? null : queue.next());
+			if(queue.hasNext()){
+				runnable = queue.next();
+			}
 		}
-		if(empty){
+		if(runnable == null){
 			awaitLock.unlock();
 		}
+		return runnable;
 	}
 	
 	public void awaitDone() {

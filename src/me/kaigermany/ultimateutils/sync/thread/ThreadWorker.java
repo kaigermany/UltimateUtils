@@ -27,23 +27,20 @@ public class ThreadWorker {
 	}
 	
 	private void runLoop(){
-		final AsyncRunnable[] functionPointer = new AsyncRunnable[1];
 		try {
 			while (isAlive) {
-				queue.poll((func) -> {
-					functionPointer[0] = func;
-					if (func == null) {
-						synchronized (ThreadWorker.this) {
-							isWorking = false;
-						}
+				AsyncRunnable r = queue.poll();
+				if (r == null) {
+					synchronized (ThreadWorker.this) {
+						isWorking = false;
 					}
-				});
+				}
 
-				if (functionPointer[0] == null) {
+				if (r == null) {
 					break;
 				} else {
-					functionPointer[0].execute();
-					functionPointer[0] = null;
+					r.execute();
+					r = null;
 				}
 			}
 		} finally {
