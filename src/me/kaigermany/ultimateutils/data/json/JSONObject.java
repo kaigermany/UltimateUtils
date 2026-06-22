@@ -112,7 +112,7 @@ public class JSONObject {
 		}
 	}
 
-	static public JSONObject parse(String source) {
+	public static JSONObject parse(String source) {
 		return new JSONObject(new JSONTokener(source));
 	}
 
@@ -139,6 +139,13 @@ public class JSONObject {
 		return (int) getLong(key);
 	}
 
+	public int getInt(String key, int defaultValue) {
+		if (this.get(key) == null) {
+			return defaultValue;
+		}
+		return (int) getLong(key);
+	}
+
 	public long getLong(String key) {
 		Object object = map.get(key);
 		if (object instanceof Number) {
@@ -147,7 +154,21 @@ public class JSONObject {
 		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a number: " + typeOf(object));
 	}
 
+	public long getLong(String key, long defaultValue) {
+		if (this.get(key) == null) {
+			return defaultValue;
+		}
+		return getLong(key);
+	}
+
 	public float getFloat(String key) {
+		return (float) getDouble(key);
+	}
+
+	public float getFloat(String key, float defaultValue) {
+		if (this.get(key) == null) {
+			return defaultValue;
+		}
 		return (float) getDouble(key);
 	}
 
@@ -159,12 +180,26 @@ public class JSONObject {
 		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a number: " + typeOf(object));
 	}
 
+	public double getDouble(String key, double defaultValue) {
+		if (this.get(key) == null) {
+			return defaultValue;
+		}
+		return getDouble(key);
+	}
+
 	public boolean getBoolean(String key) {
 		Object object = map.get(key);
 		if (object instanceof Boolean) {
 			return ((Boolean) object).booleanValue();
 		}
 		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a boolean: " + typeOf(object));
+	}
+
+	public boolean getBoolean(String key, boolean defaultValue) {
+		if (this.get(key) == null) {
+			return defaultValue;
+		}
+		return getBoolean(key);
 	}
 
 	public JSONArray getJSONArray(String key) {
@@ -175,6 +210,13 @@ public class JSONObject {
 		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a JSONArray: " + typeOf(object));
 	}
 
+	public JSONArray getJSONArray(String key, JSONArray defaultValue) {
+		if (this.get(key) == null) {
+			return defaultValue;
+		}
+		return getJSONArray(key);
+	}
+
 	public JSONObject getJSONObject(String key) {
 		Object object = map.get(key);
 		if (object instanceof JSONObject) {
@@ -183,12 +225,19 @@ public class JSONObject {
 		throw new IllegalArgumentException("JSONObject[" + JSONTokener.quote(key) + "] is not a JSONObject: " + typeOf(object));
 	}
 
+	public JSONObject getJSONObject(String key, JSONObject defaultValue) {
+		if (this.get(key) == null) {
+			return defaultValue;
+		}
+		return getJSONObject(key);
+	}
+
 	public boolean containsKey(String key) {
 		return map.containsKey(key);
 	}
 
-	public boolean containsValue(String key) {
-		return map.containsValue(key);
+	public boolean containsValue(Object value) {
+		return map.containsValue(value);
 	}
 
 	public boolean isNull(String key) {
@@ -273,8 +322,12 @@ public class JSONObject {
 	public String toString() {
 		return format(2);
 	}
+	
+	public String toJSONString(){
+		return format(0);
+	}
 
-	private String format(int indentFactor) {
+	public String format(int indentFactor) {
 		StringWriter w = new StringWriter();
 		synchronized (w.getBuffer()) {
 			JSONTokener.writeInternal(this, w, indentFactor, 0);
@@ -283,7 +336,7 @@ public class JSONObject {
 	}
 
 	@SuppressWarnings("unchecked")
-	static protected Object wrap(Object object) {
+	protected static Object wrap(Object object) {
 		try {
 			if (object == null) {
 				return null;

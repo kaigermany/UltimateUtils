@@ -31,6 +31,39 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
+import java.io.InputStream;
+
+/*
+ * based on: https://github.com/processing/processing/blob/master/core/src/processing/data/JSONArray.java
+ * 
+ * - created by JSON.org, 2002
+ * - modified by Processing Foundation, 2017
+ * - modified by KaiGermany, 2025
+ */
+
+/*
+Copyright (c) 2002 JSON.org
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+The Software shall be used for Good, not Evil.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ */
 
 import java.io.Reader;
 import java.io.StringWriter;
@@ -45,6 +78,10 @@ public class JSONArray {
 
 	public JSONArray(Reader reader) {
 		this(new JSONTokener(reader));
+	}
+
+	public JSONArray(InputStream inputStream) {
+		this(new JSONTokener(inputStream));
 	}
 
 	protected JSONArray(JSONTokener x) {
@@ -253,6 +290,7 @@ public class JSONArray {
 	}
 
 	public JSONArray add(Object value) {
+		JSONTokener.testValidity(value);
 		myArrayList.add(value);
 		return this;
 	}
@@ -321,8 +359,12 @@ public class JSONArray {
 	public String toString() {
 		return format(2);
 	}
+	
+	public String toJSONString(){
+		return format(0);
+	}
 
-	private String format(int indentFactor) {
+	public String format(int indentFactor) {
 		StringWriter sw = new StringWriter();
 		synchronized (sw.getBuffer()) {
 			JSONTokener.writeInternal(this, sw, indentFactor, 0);
