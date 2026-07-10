@@ -3,7 +3,6 @@ package me.kaigermany.ultimateutils.special;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URI;
@@ -24,13 +23,13 @@ public class UnknownResourceInjector9 {
 		Class<?> bclType = Class.forName("jdk.internal.loader.BuiltinClassLoader");
 		Class<?> moduleReferenceClass = Class.forName("java.lang.module.ModuleReference");
 
-		final Map<String, Object> packageToModule = (Map<String, Object>)unsafeGetStaticField(bclType, bclType.getDeclaredField("packageToModule"));
+		final Map<String, Object> packageToModule = (Map<String, Object>)Unsafe.getStaticField(bclType, bclType.getDeclaredField("packageToModule"));
 
 		for(Object loadedModule : packageToModule.values()){
-			Object moduleReference = unsafeGetDynamicField(loadedModule, loadedModule.getClass().getDeclaredField("mref"));
-			Object moduleDescriptor = unsafeGetDynamicField(moduleReference, moduleReferenceClass.getDeclaredField("descriptor"));
+			Object moduleReference = Unsafe.getDynamicField(loadedModule, loadedModule.getClass().getDeclaredField("mref"));
+			Object moduleDescriptor = Unsafe.getDynamicField(moduleReference, moduleReferenceClass.getDeclaredField("descriptor"));
 
-			unsafeSetDynamicField(moduleDescriptor, moduleDescriptor.getClass().getDeclaredField("open"), true);
+			Unsafe.setDynamicField(moduleDescriptor, moduleDescriptor.getClass().getDeclaredField("open"), true);
 
 			knownModuleDescriptors.add(moduleDescriptor);
 		}
@@ -41,21 +40,21 @@ public class UnknownResourceInjector9 {
 		Class<?> ClassLoadersClazz = Class.forName("jdk.internal.loader.ClassLoaders");
 
 		for(String bootLoaderName : new String[]{"BOOT_LOADER", "PLATFORM_LOADER", "APP_LOADER"}) {
-			Object BuiltinClassLoaderInstance = unsafeGetStaticField(ClassLoadersClazz, ClassLoadersClazz.getDeclaredField(bootLoaderName));
+			Object BuiltinClassLoaderInstance = Unsafe.getStaticField(ClassLoadersClazz, ClassLoadersClazz.getDeclaredField(bootLoaderName));
 
-			final Map<String, Object> nameToModule = (Map<String, Object>)unsafeGetDynamicField(BuiltinClassLoaderInstance, nameToModuleRawPointer);
+			final Map<String, Object> nameToModule = (Map<String, Object>)Unsafe.getDynamicField(BuiltinClassLoaderInstance, nameToModuleRawPointer);
 
 			for (Object moduleReference : nameToModule.values()) {
-				Object moduleDescriptor = unsafeGetDynamicField(moduleReference, moduleReferenceClass.getDeclaredField("descriptor"));
+				Object moduleDescriptor = Unsafe.getDynamicField(moduleReference, moduleReferenceClass.getDeclaredField("descriptor"));
 
-				unsafeSetDynamicField(moduleDescriptor, moduleDescriptor.getClass().getDeclaredField("open"), true);
+				Unsafe.setDynamicField(moduleDescriptor, moduleDescriptor.getClass().getDeclaredField("open"), true);
 
 				knownModuleDescriptors.add(moduleDescriptor);
 			}
 			//ModuleReference, ModuleReader
-			Map<Object, Object> moduleToReader = (Map<Object, Object>)unsafeGetDynamicField(BuiltinClassLoaderInstance, moduleToReaderRawPointer);
+			Map<Object, Object> moduleToReader = (Map<Object, Object>)Unsafe.getDynamicField(BuiltinClassLoaderInstance, moduleToReaderRawPointer);
 			final Class<?> mr = Class.forName("java.lang.module.ModuleReader");
-			unsafeSetDynamicField(BuiltinClassLoaderInstance, moduleToReaderRawPointer,
+			Unsafe.setDynamicField(BuiltinClassLoaderInstance, moduleToReaderRawPointer,
 					new GetInjectedMap<>(moduleToReader,
 							new BiFunction<Object, Object, Object>(){
 								private final HashMap<Object, Object> localCacheMap = new HashMap<>(128);
@@ -85,10 +84,10 @@ public class UnknownResourceInjector9 {
 
 		for(Object md : knownModuleDescriptors){
 			try{//if not used, randomly errors will occur! idk why...
-				unsafeSetDynamicField(md, md.getClass().getDeclaredField("open"), true);
+				Unsafe.setDynamicField(md, md.getClass().getDeclaredField("open"), true);
 
-				Set<String> packagesSet = (Set<String>)unsafeGetDynamicField(md, md.getClass().getDeclaredField("packages"));
-				unsafeSetDynamicField(md, md.getClass().getDeclaredField("packages"), new SetButEveryContainsIsTrue<>(packagesSet));//CONFIRMED
+				Set<String> packagesSet = (Set<String>)Unsafe.getDynamicField(md, md.getClass().getDeclaredField("packages"));
+				Unsafe.setDynamicField(md, md.getClass().getDeclaredField("packages"), new SetButEveryContainsIsTrue<>(packagesSet));//CONFIRMED
 
 
 			}catch (Exception e){
@@ -319,7 +318,7 @@ public class UnknownResourceInjector9 {
 	private static String reverseResolveName(String name, Map<String, Object> nameToModule, Object moduleSource){
 		try{
 			for(Map.Entry<String, Object> e : nameToModule.entrySet()){//a module can contain multiple package paths!
-				Object moduleReference = unsafeGetDynamicField(e.getValue(), e.getValue().getClass().getDeclaredField("mref"));
+				Object moduleReference = Unsafe.getDynamicField(e.getValue(), e.getValue().getClass().getDeclaredField("mref"));
 				if(moduleReference == moduleSource){//filter all packages that can not contain our path
 					String prefix = e.getKey().replace('.', '/') + '/';
 					//System.out.println("prefix = " + prefix);
@@ -331,95 +330,5 @@ public class UnknownResourceInjector9 {
 		}catch (Exception e) {e.printStackTrace();}
 
 		return name;
-	}
-/*
-	public static class WrappedModuleReader implements ModuleReader {
-		final ModuleReader readerInput;
-		final Map<String, Object> nameToModule;
-		final ModuleReference moduleSource;
-		public WrappedModuleReader(ModuleReader readerInput, Map<String, Object> nameToModule, ModuleReference moduleSource){
-			this.readerInput = readerInput;
-			this.nameToModule = nameToModule;
-			this.moduleSource = moduleSource;
-		}
-
-		@Override
-		public Optional<InputStream> open(String name) throws IOException {
-			Optional<InputStream> outDefault = readerInput.open(name);
-			if(!outDefault.isPresent()){
-				InputStream is = UnknownResourceListener.getResource(reverseResolveName(name, nameToModule, moduleSource));
-				if(is != null) {
-					return Optional.of(is);
-				}
-			}
-			return outDefault;
-		}
-
-		@Override
-		public Optional<URI> find(String name) throws IOException {
-			{
-				Optional<URI> outDefault = readerInput.find(name);
-				if(outDefault.isPresent()){
-					return outDefault;
-				}
-			}
-			InputStream is = UnknownResourceListener.getResource(reverseResolveName(name, nameToModule, moduleSource));
-			if(is != null) {
-				try {
-					return Optional.of(UnknownResourceListener.createURL(is).toURI());//toURI() loses the custom handler, so we need also to implement open()-method to compete a request.
-				} catch (Exception ignored) {}
-			}
-			return Optional.empty();
-		}
-
-		@Override
-		public Stream<String> list() throws IOException {
-			return readerInput.list();
-		}
-
-		@Override
-		public void close() throws IOException {
-			readerInput.close();
-		}
-	}
-
-*/
-
-	public static Object unsafeGetStaticField(Class<?> targetClass, Field targetFieldInClass) throws ClassNotFoundException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, NoSuchFieldException {
-		Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
-		Field f = unsafeClass.getDeclaredField("theUnsafe");
-		f.setAccessible(true);
-		Object unsafe = f.get(null);
-
-		Long off = (Long)unsafeClass.getDeclaredMethod("staticFieldOffset", Field.class).invoke(unsafe, targetFieldInClass);
-		return unsafeClass.getDeclaredMethod("getObject", Object.class, long.class).invoke(unsafe, targetClass, off);
-	}
-	public static void unsafeSetStaticField(Class<?> targetClass, Field targetFieldInClass, Object objectToSet) throws ClassNotFoundException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, NoSuchFieldException {
-		Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
-		Field f = unsafeClass.getDeclaredField("theUnsafe");
-		f.setAccessible(true);
-		Object unsafe = f.get(null);
-
-		Long off = (Long)unsafeClass.getDeclaredMethod("staticFieldOffset", Field.class).invoke(unsafe, targetFieldInClass);
-		unsafeClass.getDeclaredMethod("putObject", Object.class, long.class, Object.class).invoke(unsafe, targetClass, off, objectToSet);
-	}
-
-	public static Object unsafeGetDynamicField(Object instance, Field targetFieldInClass) throws ClassNotFoundException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, NoSuchFieldException {
-		Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
-		Field f = unsafeClass.getDeclaredField("theUnsafe");
-		f.setAccessible(true);
-		Object unsafe = f.get(null);
-
-		Long off = (Long)unsafeClass.getDeclaredMethod("objectFieldOffset", Field.class).invoke(unsafe, targetFieldInClass);
-		return unsafeClass.getDeclaredMethod("getObject", Object.class, long.class).invoke(unsafe, instance, off);
-	}
-	public static void unsafeSetDynamicField(Object instance, Field targetFieldInClass, Object objectToSet) throws ClassNotFoundException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, NoSuchFieldException {
-		Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
-		Field f = unsafeClass.getDeclaredField("theUnsafe");
-		f.setAccessible(true);
-		Object unsafe = f.get(null);
-
-		Long off = (Long)unsafeClass.getDeclaredMethod("objectFieldOffset", Field.class).invoke(unsafe, targetFieldInClass);
-		unsafeClass.getDeclaredMethod("putObject", Object.class, long.class, Object.class).invoke(unsafe, instance, off, objectToSet);
 	}
 }
