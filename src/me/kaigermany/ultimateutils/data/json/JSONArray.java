@@ -289,6 +289,21 @@ public class JSONArray {
 		return outgoing;
 	}
 
+	public JSONObject[] toJSONObjectArray() {
+		JSONObject[] outgoing = new JSONObject[size()];
+		for (int i = 0; i < size(); i++) {
+			outgoing[i] = getJSONObject(i);
+		}
+		return outgoing;
+	}
+
+	public JSONArray[] toJSONArrayArray() {
+		JSONArray[] outgoing = new JSONArray[size()];
+		for (int i = 0; i < size(); i++) {
+			outgoing[i] = getJSONArray(i);
+		}
+		return outgoing;
+	}
 	public JSONArray add(Object value) {
 		JSONTokener.testValidity(value);
 		myArrayList.add(value);
