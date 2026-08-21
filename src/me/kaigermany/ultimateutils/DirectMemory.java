@@ -27,7 +27,7 @@ public class DirectMemory {
 			}
 			version = Integer.parseInt(versionStr);
 		}
-		System.out.println("version=" + version);
+		
 		if (version < 8) {
 			System.err.println("DirectMemory: WARNING: your version seems to be too old (" + version
 					+ "). So it cant savely provide you a cleanup function!");
