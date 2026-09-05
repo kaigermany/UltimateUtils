@@ -119,6 +119,14 @@ public class JSONArray {
 		return new JSONArray(new JSONTokener(source));
 	}
 
+	public static JSONArray parse(InputStream inputStream) {
+		return new JSONArray(inputStream);
+	}
+
+	public static JSONArray parse(Reader reader) {
+		return new JSONArray(reader);
+	}
+
 	protected JSONArray(Object array) {
 		if (array.getClass().isArray()) {
 			int length = Array.getLength(array);

@@ -113,7 +113,15 @@ public class JSONObject {
 	}
 
 	public static JSONObject parse(String source) {
-		return new JSONObject(new JSONTokener(source));
+		return new JSONObject(source);
+	}
+
+	public static JSONObject parse(InputStream inputStream) {
+		return new JSONObject(inputStream);
+	}
+
+	public static JSONObject parse(Reader reader) {
+		return new JSONObject(reader);
 	}
 
 	public Object get(String key) {
