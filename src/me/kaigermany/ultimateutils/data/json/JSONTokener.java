@@ -50,10 +50,12 @@ public class JSONTokener {
 	private char previous;
 	private Reader reader;
 	private boolean usePrevious;
+	private final boolean enableCompression;
 
 	private Map<Object, Object> deduplicationMap;
 
-	public JSONTokener(Reader reader) {
+	public JSONTokener(Reader reader, boolean readOnly) {
+		this.enableCompression = readOnly;
 		this.reader = reader;
 		// reader.markSupported() ? reader : new BufferedReader(reader);
 		this.eof = false;
@@ -63,12 +65,12 @@ public class JSONTokener {
 		this.deduplicationMap = new HashMap<Object, Object>();
 	}
 
-	public JSONTokener(InputStream inputStream) {
-		this(new InputStreamReader(inputStream));
+	public JSONTokener(InputStream inputStream, boolean readOnly) {
+		this(new InputStreamReader(inputStream), readOnly);
 	}
 
 	public JSONTokener(String s) {
-		this(new StringReader(s));
+		this(new StringReader(s), false);
 	}
 
 	public void back() {
@@ -193,6 +195,18 @@ public class JSONTokener {
 				return new JSONObject(this);
 			case '[':
 				this.back();
+				if(enableCompression){
+					JSONArray arr = new JSONArray(this);
+					JSONArray arr2 = CompressedJSONArray.tryCreateCompressed(arr);
+					if(arr2 != null){
+						//clear Numbers from cache:
+						for(Object k : new java.util.ArrayList<>(deduplicationMap.keySet())){
+							if(k instanceof Number) deduplicationMap.remove(k);
+						}
+						return arr2;
+					}
+					return  arr;
+				}
 				return new JSONArray(this);
 		}
 		StringBuilder sb = new StringBuilder();

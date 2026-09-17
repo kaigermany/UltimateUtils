@@ -77,11 +77,15 @@ public class JSONArray {
 	}
 
 	public JSONArray(Reader reader) {
-		this(new JSONTokener(reader));
+		this(new JSONTokener(reader, false));
 	}
 
 	public JSONArray(InputStream inputStream) {
-		this(new JSONTokener(inputStream));
+		this(new JSONTokener(inputStream, false));
+	}
+
+	public JSONArray(InputStream inputStream, boolean readOnly) {
+		this(new JSONTokener(inputStream, readOnly));
 	}
 
 	protected JSONArray(JSONTokener x) {

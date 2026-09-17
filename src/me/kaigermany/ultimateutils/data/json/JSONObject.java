@@ -48,11 +48,11 @@ public class JSONObject {
 	public JSONObject() {}
 
 	public JSONObject(Reader reader) {
-		this(new JSONTokener(reader));
+		this(new JSONTokener(reader, false));
 	}
 
 	public JSONObject(InputStream inputStream) {
-		this(new JSONTokener(inputStream));
+		this(new JSONTokener(inputStream, false));
 	}
 
 	public JSONObject(String s) {
