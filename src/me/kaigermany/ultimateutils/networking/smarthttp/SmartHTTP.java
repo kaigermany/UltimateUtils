@@ -12,98 +12,15 @@ public class SmartHTTP {
 	private static int WATCHDOG_SLEEP_CYCLE = 60 * 1000;
 	
 	private static HashMap<String, HTTPServerGroup> clients = new HashMap<String, HTTPServerGroup>();
-/*
-	@Deprecated
-	public static HTTPResult request(String url, String requestMethod, HashMap<String, String> headerFields, byte[] postData) throws IOException {
-		String[] urlElements = parseUrl(url);
-		int port;
-		boolean ssl = urlElements[0] != null && urlElements[0].equals("https");
-		if(urlElements[2] == null) {
-			port = ssl ? 443 : 80;
-		} else {
-			port = Integer.parseInt(urlElements[2]);
-		}
-		return request(urlElements[1], port, urlElements[3], requestMethod, headerFields, postData, NUM_MAX_CONNECTIONS_PER_SERVER, ssl, false, null);
-	}
-	@Deprecated
-	public static HTTPResult request(String url, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount) throws IOException {
-		String[] urlElements = parseUrl(url);
-		int port;
-		boolean ssl = urlElements[0] != null && urlElements[0].equals("https");
-		if(urlElements[2] == null) {
-			port = ssl ? 443 : 80;
-		} else {
-			port = Integer.parseInt(urlElements[2]);
-		}
-		return request(urlElements[1], port, urlElements[3], requestMethod, headerFields, postData, maxSocketCount, ssl, false, null);
-	}
-	@Deprecated
-	public static HTTPResult request(String url, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl) throws IOException {
-		String[] urlElements = parseUrl(url);
-		if(urlElements[0] != null && !urlElements[0].equals("https") && ssl){
-			throw new IOException("if ssl = true then the protocol is forced to use https");
-		}
-		int port;
-		if(urlElements[2] == null) {
-			port = ssl ? 443 : 80;
-		} else {
-			port = Integer.parseInt(urlElements[2]);
-		}
-		return request(urlElements[1], port, urlElements[3], requestMethod, headerFields, postData, maxSocketCount, ssl, false, null);
-	}
-	@Deprecated
-	public static HTTPResult request(String url, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck) throws IOException {
-		String[] urlElements = parseUrl(url);
-		if(urlElements[0] != null && !urlElements[0].equals("https") && ssl){
-			throw new IOException("if ssl = true then the protocol is forced to use https");
-		}
-		int port;
-		if(urlElements[2] == null) {
-			port = ssl ? 443 : 80;
-		} else {
-			port = Integer.parseInt(urlElements[2]);
-		}
-		return request(urlElements[1], port, urlElements[3], requestMethod, headerFields, postData, maxSocketCount, ssl, disableCertificateCheck, null);
-	}
-	@Deprecated
-	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData) throws IOException {
-		return request(server, port, page, requestMethod, headerFields, postData, NUM_MAX_CONNECTIONS_PER_SERVER);
-	}
-	@Deprecated
-	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount) throws IOException {
-		return request(server, port, page, requestMethod, headerFields, postData, maxSocketCount, port == 443);
-	}
-	@Deprecated
-	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl) throws IOException {
-		return request(server, port, page, requestMethod, headerFields, postData, maxSocketCount, ssl, false);
-	}
-	@Deprecated
-	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck) throws IOException {
-		return request(server, port, page, requestMethod, headerFields, postData, maxSocketCount, ssl, disableCertificateCheck, null);
-	}
-	@Deprecated
-	public static HTTPResult request(String url, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck, HTTPResultEvent event) throws IOException {
-		String[] urlElements = parseUrl(url);
-		if(urlElements[0] != null && !urlElements[0].equals("https") && ssl){
-			throw new IOException("if ssl = true then the protocol is forced to use https");
-		}
-		int port;
-		if(urlElements[2] == null) {
-			port = ssl ? 443 : 80;
-		} else {
-			port = Integer.parseInt(urlElements[2]);
-		}
-		return request(urlElements[1], port, urlElements[3], requestMethod, headerFields, postData, maxSocketCount, ssl, disableCertificateCheck, event);
-	}
 	
-	@Deprecated
-	public static HTTPResult request(String server, int port, String page, String requestMethod, HashMap<String, String> headerFields, byte[] postData, int maxSocketCount, boolean ssl, boolean disableCertificateCheck, HTTPResultEvent event) throws IOException {
-		return request(server, port, page, requestMethod, headerFields, postData, maxSocketCount, ssl, disableCertificateCheck, event, 3, false, null);
-	}
-	*/
-	
+	/**
+	 * Main method to do a web request.
+	 * @param options Insert HTTPRequestOptions instance here with your configs.
+	 * @return HTTPResult instance with all response bytes (unless stream listener option was defined in request)
+	 * @throws IOException
+	 */
 	public static HTTPResult request(HTTPRequestOptions options) throws IOException {
-		IOException exception = null;
+		IOException firstException = null;
 		for(int retrys = 0; retrys < options.getRetryCount(); retrys++){
 			HTTPClient client = null;
 			try{
@@ -116,33 +33,48 @@ public class SmartHTTP {
 				return client.request(options.getPage(), options.getRequestMethod(), options.getHeaderFields(), options.getPostData(), options.getEvent(), options.areDefaultHeaderDisabled(), options.getTimeout());
 			}catch(IOException e){
 				if(client != null) client.close();
-				if(exception == null) exception = e;
-				//e.printStackTrace();
-				//System.out.println("retry#" + (retrys + 1));
+				if(firstException == null) firstException = e;
 			}
 		}
-		if(exception == null) exception = new IOException("unknown error: all retrys failed");
-		throw exception;
+		if(firstException == null) firstException = new IOException("unknown error: all retrys failed");
+		throw firstException;
+	}
+	
+	/**
+	 * Optional way to reconfigure the watchdog delay.
+	 * (if you know you have more long-living or many
+	 * short-living peaks, then you can save some CPU time here.)
+	 * <br/><br/> --- Use only if you are know what you're doing! ---
+	 * @param millis Sleep time in milliseconds.
+	 */
+	public static void setWatchdogSleepCycle(int millis){
+		if(millis <= 0) {
+			throw new IllegalArgumentException("duration " + millis + " is too small, must be >= 1.");
+		}
+		WATCHDOG_SLEEP_CYCLE = millis;
+	}
+	
+	/**
+	 * Getter to get statistical connection counts. <br/>
+	 * Note: high call rates may throttle the overall 
+	 * performance, caused by internal mutex usages.
+	 * @return Sum of all active connection handled here.
+	 */
+	public static int getActiveConnectionCount(){
+		int count = 0;
+		synchronized (clients) {
+			for(HTTPServerGroup group : clients.values()){
+				count += group.getNumActiveConnections();
+			}
+		}
+		return count;
 	}
 	
 	private static HTTPClient getOrCreateConnection(String server, int port, boolean ssl, boolean disableCertificateCheck, int maxSocketCount, Proxy proxy) throws UnknownHostException, IOException {
 		if(maxSocketCount <= 0) return null;
 		
 		String searchKey = server + "&" + port + "&" + ssl + "&" + disableCertificateCheck + "&" + proxy;
-		//long printTimeout = (30 * 1000) / 50;
 		while(true){
-			/*
-			synchronized (clients) {
-				HTTPServerGroup group = clients.computeIfAbsent(searchKey, k->new HTTPServerGroup());
-				if(group.getNumActiveConnections() < maxSocketCount){
-					HTTPClient clientInstance = group.getOrCreateClient(server, port, ssl, disableCertificateCheck, proxy);
-					if(clientInstance != null){
-						tryStartWatchDog();
-						return clientInstance;
-					}
-				}
-			}
-			*/
 			HTTPServerGroup group;
 			synchronized (clients) {
 				group = clients.computeIfAbsent(searchKey, k->new HTTPServerGroup());
@@ -155,17 +87,6 @@ public class SmartHTTP {
 				}
 			}
 			sleep(50);
-			/*
-			printTimeout--;
-			if(printTimeout < 0){
-				synchronized (clients) {
-					HTTPServerGroup group = clients.get(searchKey);
-					System.out.println("[SmartHTTP debug dump] potential timeout for key '"
-						+ searchKey + "', numConnections = " + group.getNumActiveConnections()
-						+ ", HTTPServerGroup: " + group.toString());
-				}
-			}
-			*/
 		}
 	}
 	
@@ -225,7 +146,7 @@ public class SmartHTTP {
 					}
 				}
 			}
-		}, "SmartHTTP Watchdog");
+		}, "SmartHTTP Cleanup Watchdog");
 		t.setDaemon(true);
 		t.start();
 	}
