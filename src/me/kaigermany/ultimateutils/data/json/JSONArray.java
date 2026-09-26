@@ -69,6 +69,7 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class JSONArray {
 	private final ArrayList<Object> myArrayList = new ArrayList<>();
@@ -316,6 +317,40 @@ public class JSONArray {
 		}
 		return outgoing;
 	}
+	/*
+	public Iterable<Integer> iteratorBoolean(){
+		return buildIterable(Boolean.class);
+	}
+	
+	public Iterable<Integer> iteratorInt(){
+		return buildIterable(Integer.class);
+	}
+	
+	public Iterable<Integer> iteratorLong(){
+		return buildIterable(Long.class);
+	}
+	
+	public Iterable<Integer> iteratorInt(){
+		return buildIterable(Integer.class);
+	}
+	*/
+	public <T> Iterable<T> buildIterable(Class<T> type){
+		final ArrayList<T> typifiedList = new ArrayList<>(myArrayList.size());
+		for(Object obj : myArrayList){
+			typifiedList.add(type.cast(obj));
+		}
+		
+		return new Iterable<T>(){
+			
+			final Iterator<T> it = typifiedList.iterator();
+			
+			@Override
+			public Iterator<T> iterator() {
+				return it;
+			}
+		};
+	}
+
 	public JSONArray add(Object value) {
 		JSONTokener.testValidity(value);
 		myArrayList.add(value);
