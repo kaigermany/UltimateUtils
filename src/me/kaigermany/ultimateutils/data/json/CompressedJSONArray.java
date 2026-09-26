@@ -4,7 +4,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.util.Arrays;
 
-public class CompressedJSONArray extends JSONArray {
+public abstract class CompressedJSONArray extends JSONArray {
 	public static JSONArray tryCreateCompressed(JSONArray baseArray) {
 		int globalTypeID = 0;
 		//phase 1: Number-test.
@@ -65,11 +65,21 @@ public class CompressedJSONArray extends JSONArray {
 		}
 	}
 	
-	
 	public static class MethodNotSupportedException extends RuntimeException {
 		private static final long serialVersionUID = 9070820628490579211L;
 	}
 	
+	/**
+	 * use this to "decompress" this instance and make it mutable again.
+	 */
+	public JSONArray toMutableJSONArray(){
+		JSONArray standardArrayType = new JSONArray();
+		int len = this.size();
+		for(int i=0; i<len; i++){
+			standardArrayType.add(this.get(i));
+		}
+		return standardArrayType;
+	}
 	
 	@Override
 	public boolean getBoolean(int index) {
