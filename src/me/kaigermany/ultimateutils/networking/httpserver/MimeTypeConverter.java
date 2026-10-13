@@ -29,6 +29,8 @@ public class MimeTypeConverter {
 				return "audio/ogg";
 			case "ogv":
 				return "audio/ogg";
+			case "wav":
+				return "audio/wav";
 	
 			// Video
 			case "mp4":
