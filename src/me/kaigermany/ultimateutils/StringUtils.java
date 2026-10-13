@@ -77,4 +77,45 @@ public class StringUtils {
 		items.add(in.substring(offset));
 		return items;
 	}
+	
+
+
+	public static ArrayList<String> splitStringSave(String in, String filter) {
+		ArrayList<String> result = new ArrayList<String>();
+		StringBuilder currentPart = new StringBuilder();
+		boolean insideQuotes = false;
+		char[] chars = in.toCharArray();
+		char quoteChar = 0;
+
+		for (int i = 0; i < chars.length; i++) {
+			char c = chars[i];
+
+			if (insideQuotes) {
+				if (c == quoteChar) {
+					if(i == 0 || chars[i-1] != '\\'){//if previous char is NOT escaped
+						insideQuotes = false;
+					}
+				}
+				currentPart.append(c);
+			} else {
+				if (c == '\'' || c == '"') {
+					if(i == 0 || chars[i-1] != '\\'){//if previous char is NOT escaped
+						insideQuotes = true;
+						quoteChar = c;
+					}
+					currentPart.append(c);
+				} else if (String.valueOf(c).equals(filter)) {
+					result.add(currentPart.toString());
+					currentPart.setLength(0);
+				} else {
+					currentPart.append(c);
+				}
+			}
+		}
+
+		// Add the last part
+		result.add(currentPart.toString());
+
+		return result;
+	}
 }
