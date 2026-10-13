@@ -9,6 +9,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
@@ -366,5 +368,17 @@ public class StaticUtils {
 		output.write(input, i, input.length - i);
 
 		return output.toByteArray();
+	}
+	
+	/**
+	 * Creates a String as found in console logs.
+	 * The idea is to allow easy routing the text to other places but keep all the details and the format.
+	 * @param exceptionInstance the error that has to be stringified.
+	 * @return the print-version of the exception as found in normal console logs.
+	 */
+	public static String exceptionToString(Throwable exceptionInstance){
+		StringWriter w = new StringWriter();
+		exceptionInstance.printStackTrace(new PrintWriter(w));
+		return w.toString();
 	}
 }
