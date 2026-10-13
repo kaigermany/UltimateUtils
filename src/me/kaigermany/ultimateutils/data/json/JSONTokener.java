@@ -371,14 +371,14 @@ public class JSONTokener {
 				if (commanate) {
 					writer.write(',');
 				}
-				if (indentFactor != 0) {
+				if (indentFactor > 0) {
 					writer.write('\n');
 				}
 				JSONTokener.indent(writer, newIndent);
 				JSONTokener.writeValue(writer, myArrayList.get(i), indentFactor, newIndent);
 				commanate = true;
 			}
-			if (indentFactor != 0) {
+			if (indentFactor > 0) {
 				writer.write('\n');
 			}
 			JSONTokener.indent(writer, indent);

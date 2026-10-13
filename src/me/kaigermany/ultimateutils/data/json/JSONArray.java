@@ -423,7 +423,7 @@ public class JSONArray {
 	}
 	
 	public String toJSONString(){
-		return format(0);
+		return format(-1);
 	}
 
 	public String format(int indentFactor) {

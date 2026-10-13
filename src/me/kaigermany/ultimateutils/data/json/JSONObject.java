@@ -332,9 +332,11 @@ public class JSONObject {
 	}
 	
 	public String toJSONString(){
-		return format(0);
+		return format(-1);
 	}
 
+	//indentFactor is the number of spaces per level.
+	//if -1 then even no enters will be inserted.
 	public String format(int indentFactor) {
 		StringWriter w = new StringWriter();
 		synchronized (w.getBuffer()) {
