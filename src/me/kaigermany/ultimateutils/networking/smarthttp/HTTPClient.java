@@ -164,7 +164,7 @@ public class HTTPClient {
 					};
 	
 					event.onReceived(returningResult, wis);
-					wis.readToEnd(DUMMY_BUFFER);
+					if(!disabled) wis.readToEnd(DUMMY_BUFFER);
 				} else {
 					ByteArrayOutputStream baos = new  ByteArrayOutputStream();
 					byte[] buf = new byte[4096];
@@ -297,6 +297,8 @@ public class HTTPClient {
 	}
 
 	public static abstract class WrappedInputStream extends InputStream{
+		private byte[] skipBuffer = null;//allocate only if needed.
+		
 		@Override
 		public int read() throws IOException {
 			byte[] b = new byte[1];
@@ -313,6 +315,13 @@ public class HTTPClient {
 		
 		public void readToEnd(byte[] dummyBuffer) throws IOException {
 			while(read(dummyBuffer, 0, dummyBuffer.length) != -1);
+		}
+		
+		@Override
+		public long skip(long numBytes) throws IOException {
+			if(skipBuffer == null) skipBuffer = new byte[1024];
+			if(numBytes > skipBuffer.length) numBytes = skipBuffer.length;
+			return read(skipBuffer, 0, (int)numBytes);
 		}
 	}
 	
