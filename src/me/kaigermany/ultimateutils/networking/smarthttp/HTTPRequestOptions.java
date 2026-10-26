@@ -161,7 +161,12 @@ public class HTTPRequestOptions {
 		return numRetrys;
 	}
 
+	@Deprecated //will be removed in a later release.
 	public HTTPRequestOptions diableDefaultHeaders(boolean newDefaultHeaderState) {
+		disableDefaultHeaders = newDefaultHeaderState;
+		return this;
+	}
+	public HTTPRequestOptions disableDefaultHeaders(boolean newDefaultHeaderState) {
 		disableDefaultHeaders = newDefaultHeaderState;
 		return this;
 	}
